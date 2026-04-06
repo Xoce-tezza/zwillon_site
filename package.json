@@ -1,0 +1,24 @@
+{
+  "name": "zwillon-scraper",
+  "version": "1.0.0",
+  "description": "ZWILLON scraper",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "scrape": "node scraper.js",
+    "serve": "node server.js",
+    "images:localize": "node download-images.js"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.2.2",
+    "axios": "^1.13.1",
+    "cors": "^2.8.6",
+    "express": "^4.22.1",
+    "fs": "^0.0.1-security",
+    "helmet": "^8.1.0",
+    "pdfkit": "^0.18.0",
+    "puppeteer": "^22.15.0",
+    "tailwindcss": "^4.2.2"
+  }
+}
