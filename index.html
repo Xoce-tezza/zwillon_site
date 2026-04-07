@@ -468,7 +468,7 @@
           <h2 class="mt-3 text-3xl font-bold">Товар недели</h2>
         </div>
         <div class="weekly-card mt-8 reveal" data-reveal data-delay="80">
-          <img src="/images/p1.jpg" alt="Товар недели ZWILLON" width="800" height="600" decoding="async" loading="lazy" />
+          <img src="https://res.cloudinary.com/dyciy0kdx/image/upload/p1" alt="Товар недели ZWILLON" width="800" height="600" decoding="async" loading="lazy" />
           <div class="weekly-body">
             <h3 class="text-2xl font-extrabold tracking-tight">ТОП товар</h3>
             <p class="mt-3 text-muted text-[15px] leading-relaxed">Специальные условия для опта. Уточним партию, цену и сроки под ваш объём.</p>
@@ -585,26 +585,6 @@
   <script src="./zwillon-shared.js"></script>
   <script src="./product-lead.js"></script>
   <script type="module" src="./index.js"></script>
-
-<script>
-window.addEventListener("DOMContentLoaded", () => {
-  const CLOUD_NAME = "dyciy0kdx";
-
-  document.querySelectorAll("img").forEach(img => {
-    const src = img.getAttribute("src");
-
-    if (src && src.includes("images/")) {
-      const fileName = src.split("images/")[1];
-
-      const newUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${fileName}`;
-
-      console.log("Замена:", src, "→", newUrl);
-
-      img.src = newUrl;
-    }
-  });
-});
-</script>
 
 </body>
 </html>

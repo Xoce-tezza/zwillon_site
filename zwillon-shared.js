@@ -13,6 +13,84 @@
     accessories: "Аксессуары",
   };
 
+  const PLACEHOLDER_IMAGE_SRC = "images/placeholder.png";
+  const CLOUDINARY_UPLOAD_BASE =
+    "https://res.cloudinary.com/dyciy0kdx/image/upload/";
+
+  function stripUrlQuery(s) {
+    const i = String(s || "").indexOf("?");
+    return i === -1 ? String(s || "") : String(s || "").slice(0, i);
+  }
+
+  function needsCloudinaryRewrite(sNoQuery) {
+    const s = String(sNoQuery || "").trim();
+    if (!s) return false;
+    if (/^https?:\/\//i.test(s) || s.startsWith("//")) {
+      const abs = s.startsWith("//") ? "https:" + s : s;
+      try {
+        const { hostname, pathname } = new URL(abs);
+        if (/zwillon\.cn$/i.test(hostname)) return true;
+        if (/\/images\//i.test(pathname)) return true;
+        return false;
+      } catch {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function cloudinaryPublicIdFromRef(ref) {
+    const s = stripUrlQuery(String(ref || "").trim());
+    if (!s) return "";
+    let pathPart = s;
+    if (/^https?:\/\//i.test(s) || s.startsWith("//")) {
+      const abs = s.startsWith("//") ? "https:" + s : s;
+      try {
+        pathPart = new URL(abs).pathname;
+      } catch {
+        return "";
+      }
+    } else {
+      pathPart = s.replace(/^\/+/, "");
+    }
+    const last = pathPart.split("/").filter(Boolean).pop() || "";
+    return last.replace(/\.[^.]+$/, "").trim();
+  }
+
+  /**
+   * URL для <img>: локальные /images/… и zwillon.cn → Cloudinary public_id (без расширения).
+   * Внешние абсолютные URL без /images/ оставляем как есть.
+   */
+  function cloudinaryImageSrc(raw) {
+    const u = String(raw || "").trim();
+    if (!u) return PLACEHOLDER_IMAGE_SRC;
+    if (u.startsWith("data:")) return u;
+    const baseOnly = stripUrlQuery(u);
+    if (
+      baseOnly === PLACEHOLDER_IMAGE_SRC ||
+      /(^|\/)placeholder\.png$/i.test(baseOnly)
+    ) {
+      return PLACEHOLDER_IMAGE_SRC;
+    }
+    if (/res\.cloudinary\.com\/dyciy0kdx/i.test(baseOnly)) return u;
+
+    if (!needsCloudinaryRewrite(baseOnly)) return u;
+
+    const id = cloudinaryPublicIdFromRef(u);
+    if (!id) return PLACEHOLDER_IMAGE_SRC;
+    return CLOUDINARY_UPLOAD_BASE + id;
+  }
+
+  function rewriteImgTagsToCloudinary(root) {
+    const docEl = root && root.querySelectorAll ? root : document;
+    docEl.querySelectorAll("img[src]").forEach((img) => {
+      const src = img.getAttribute("src");
+      if (!src) return;
+      const next = cloudinaryImageSrc(src);
+      if (next !== src) img.setAttribute("src", next);
+    });
+  }
+
   function normalizeImageUrl(u) {
     const s = String(u || "").trim();
     if (!s) return "";
@@ -25,30 +103,15 @@
   /** Как в ТЗ: пусто -> placeholder.png, // -> https: */
   function fixImage(url) {
     const u = String(url || "").trim();
-    if (!u) return "images/placeholder.png";
+    if (!u) return PLACEHOLDER_IMAGE_SRC;
     if (u.startsWith("//")) return "https:" + u;
     if (u.startsWith("http")) return u;
     return u;
   }
 
-  /**
-   * Путь для <img> на этом сайте: файлы лежат в ./images/ рядом со страницами.
-   * После normalizeImageUrl получается https://zwillon.cn/images/… — с чужой страницы
-   * картинки часто не отдаются; относительный images/… грузится с вашего сервера, как до правок.
-   */
+  /** Публичный URL картинки для UI: Cloudinary или внешний URL, локальный только placeholder. */
   function siteAssetImageSrc(url) {
-    const u = String(url || "").trim();
-    if (!u) return "images/placeholder.png";
-    if (u.startsWith("data:")) return u;
-    let s = u;
-    if (s.startsWith("//")) s = "https:" + s;
-    if (/^https?:\/\/zwillon\.cn/i.test(s)) {
-      const path = s.replace(/^https?:\/\/zwillon\.cn/i, "").replace(/^\//, "");
-      return path || "images/placeholder.png";
-    }
-    if (/^https?:\/\//i.test(s)) return s;
-    if (s.startsWith("/")) return s.replace(/^\//, "");
-    return s;
+    return cloudinaryImageSrc(url);
   }
 
   /** Критичная загрузка data.local.json без кэша. */
@@ -313,6 +376,7 @@
     CATEGORY_LABELS,
     normalizeImageUrl,
     fixImage,
+    cloudinaryImageSrc,
     siteAssetImageSrc,
     loadData,
     unregisterServiceWorkers,
@@ -338,5 +402,13 @@
     document.addEventListener("contextmenu", function (e) {
       e.preventDefault();
     });
+    function runImgRewrite() {
+      rewriteImgTagsToCloudinary(document);
+    }
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", runImgRewrite);
+    } else {
+      runImgRewrite();
+    }
   }
 })();

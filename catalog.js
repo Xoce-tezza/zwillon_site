@@ -47,21 +47,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function getMainImage(product) {
-    const CLOUDINARY_BASE = "https://res.cloudinary.com/dyciy0kdx/image/upload/";
-
-    function toCloudinarySrc(value) {
-      const raw = String(value || "").trim();
-      if (!raw) return "";
-      const fileName = raw.split("/").pop() || "";
-      const publicId = fileName.replace(/\.[^.]+$/, "").trim();
-      if (!publicId) return "";
-      return `${CLOUDINARY_BASE}${publicId}`;
-    }
-
     const list = Array.isArray(product.images) ? product.images : [];
     for (const u of [list[1], list[0]]) {
-      const src = toCloudinarySrc(u);
-      if (src) return src;
+      const src = Z.siteAssetImageSrc(u || "");
+      if (src && src !== "images/placeholder.png") return src;
     }
     return "images/placeholder.png";
   }

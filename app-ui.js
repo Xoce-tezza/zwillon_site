@@ -230,7 +230,11 @@
 
   function renderProductCard(product, index = 0) {
     const categoryLabel = (window.ZWILLON_CATEGORIES || []).find((c) => c.key === product.category)?.label || product.category;
-    const imageSrc = normalizeImageUrl(product.image) || product.image || "";
+    const Z = window.ZWILLON;
+    const imageSrc =
+      Z && typeof Z.siteAssetImageSrc === "function"
+        ? Z.siteAssetImageSrc(product.image || "")
+        : normalizeImageUrl(product.image) || product.image || "";
     return `
       <article class="reveal group card-hover rounded-2xl border border-white/10 bg-[#111] overflow-hidden flex flex-col h-full" data-reveal data-delay="${Math.min(index * 40, 220)}">
         <a href="product.html?id=${encodeURIComponent(product.id)}" class="block flex flex-col h-full">
