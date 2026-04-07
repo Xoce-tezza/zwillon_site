@@ -333,6 +333,21 @@
   <script src="./zwillon-shared.js"></script>
   <script src="./product-lead.js"></script>
   <script src="./product.js"></script>
+
+<script>
+const CLOUD_NAME = "dyciy0kdx";
+
+document.querySelectorAll("img").forEach(img => {
+  const src = img.getAttribute("src");
+
+  if (src && src.includes("/images/")) {
+    const fileName = src.split("/images/")[1];
+
+    img.src = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${fileName}`;
+  }
+});
+</script>
+
 </body>
 </html>
 
