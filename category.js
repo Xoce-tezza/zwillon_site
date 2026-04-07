@@ -22,7 +22,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     return `
       <article class="group card-apple flex flex-col h-full rounded-2xl border border-white/10 bg-[#111] overflow-hidden card-hover">
-        <a href="product.html?id=${encodeURIComponent(p.id)}" class="block flex flex-col flex-1 min-h-0">
+        <a href="${Z.escapeHtml(
+          typeof Z.getProductPageUrlById === "function"
+            ? Z.getProductPageUrlById(p.id)
+            : "product.html?id=" + encodeURIComponent(p.id)
+        )}" class="block flex flex-col flex-1 min-h-0">
           <div class="relative min-h-[280px] bg-white flex items-center justify-center p-6">
             <img src="${Z.escapeHtml(imageSrc)}" onerror="this.src='images/placeholder.png'" referrerpolicy="no-referrer" alt="${Z.escapeHtml(name)}" class="w-full h-full max-h-[320px] object-contain image-zoom transition-transform duration-500 ease-out" loading="lazy" />
           </div>
@@ -57,6 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const json = await Z.loadData();
       const products = Z.normalizeProductsFromJson(json);
+      Z.setProductSlugCacheFromNormalized?.(products);
       const filtered = products.filter((p) => p.category === categoryParam);
       const list = filtered.length ? filtered : products;
 

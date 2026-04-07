@@ -237,7 +237,11 @@
         : normalizeImageUrl(product.image) || product.image || "";
     return `
       <article class="reveal group card-hover rounded-2xl border border-white/10 bg-[#111] overflow-hidden flex flex-col h-full" data-reveal data-delay="${Math.min(index * 40, 220)}">
-        <a href="product.html?id=${encodeURIComponent(product.id)}" class="block flex flex-col h-full">
+        <a href="${escapeHtml(
+          window.ZWILLON && typeof window.ZWILLON.getProductPageUrlById === "function"
+            ? window.ZWILLON.getProductPageUrlById(product.id)
+            : "product.html?id=" + encodeURIComponent(product.id)
+        )}" class="block flex flex-col h-full">
           <div class="relative h-[240px] bg-white flex items-center justify-center p-4">
             <img src="${escapeHtml(imageSrc)}" onerror="this.src='images/placeholder.png'" referrerpolicy="no-referrer" alt="${escapeHtml(product.name_ru)}" class="w-full h-full object-contain image-zoom transition-transform duration-500" loading="lazy" />
           </div>
@@ -266,6 +270,13 @@
 
     const products = window.ZWILLON_PRODUCTS || [];
     const categories = window.ZWILLON_CATEGORIES || [];
+
+    if (
+      window.ZWILLON &&
+      typeof window.ZWILLON.setProductSlugCacheFromNormalized === "function"
+    ) {
+      window.ZWILLON.setProductSlugCacheFromNormalized(products);
+    }
 
     const searchInput = $("#searchInput");
     const statusFilter = $("#categoryFilter");

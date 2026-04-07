@@ -106,3 +106,10 @@ const PRODUCTS = [
 window.ZWILLON_CATEGORIES = CATEGORIES;
 window.ZWILLON_PRODUCTS = PRODUCTS;
 
+if (
+  window.ZWILLON &&
+  typeof window.ZWILLON.setProductSlugCacheFromNormalized === "function"
+) {
+  window.ZWILLON.setProductSlugCacheFromNormalized(PRODUCTS);
+}
+

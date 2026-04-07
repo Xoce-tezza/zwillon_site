@@ -13,10 +13,15 @@ function updateStatsDisplay() {
 window.openProduct = function openProduct(id) {
   const raw = String(id || "").trim();
   if (!raw) return;
+  const Z = window.ZWILLON;
   try {
     sessionStorage.setItem("zwillon_pending_product_id", raw);
   } catch (_) {
     /* ignore */
+  }
+  if (Z && typeof Z.getProductPageUrlById === "function") {
+    window.location.href = Z.getProductPageUrlById(raw);
+    return;
   }
   window.location.href = "product.html?id=" + encodeURIComponent(raw);
 };
@@ -226,9 +231,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const id = String(p.id || "");
     const name = String(p.name_ru || p.name || "").trim() || "Товар";
     const imgSrc = getCardImageSrc(p);
+    const productHref =
+      typeof Z.getProductPageUrlById === "function"
+        ? Z.getProductPageUrlById(id)
+        : "product.html?id=" + encodeURIComponent(id);
     return `
       <article class="card reveal group rounded-2xl border border-white/10 bg-[#111] overflow-hidden flex flex-col h-full" data-reveal>
-        <a href="product.html?id=${encodeURIComponent(id)}" class="block flex flex-col h-full">
+        <a href="${Z.escapeHtml(productHref)}" class="block flex flex-col h-full">
           <div class="relative bg-white flex items-center justify-center p-0 overflow-hidden rounded-t-2xl min-h-[220px]">
             <img src="${Z.escapeHtml(imgSrc)}" onerror="this.src='images/placeholder.png'" referrerpolicy="no-referrer" alt="${Z.escapeHtml(name)}" class="image-zoom transition-transform duration-500 w-full h-[220px] object-contain" loading="lazy" />
           </div>
@@ -251,6 +260,7 @@ document.addEventListener("DOMContentLoaded", () => {
         grid.innerHTML = `<div class="col-span-full rounded-2xl border border-white/10 bg-[#111] p-6 text-muted text-sm">Товары пока не загружены.</div>`;
         return;
       }
+      Z.setProductSlugCacheFromNormalized?.(normalized);
       grid.innerHTML = normalized.slice(0, 8).map(renderHomeProductCard).join("");
       observeRevealIn(grid);
       initHeroSlider(normalized);

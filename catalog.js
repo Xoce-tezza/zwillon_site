@@ -5,10 +5,15 @@ window.openProduct = function openProduct(id) {
     console.warn("OPEN PRODUCT: empty id");
     return;
   }
+  const Z = window.ZWILLON;
   try {
     sessionStorage.setItem("zwillon_pending_product_id", raw);
   } catch (_) {
     /* ignore */
+  }
+  if (Z && typeof Z.getProductPageUrlById === "function") {
+    window.location.href = Z.getProductPageUrlById(raw);
+    return;
   }
   window.location.href = "product.html?id=" + encodeURIComponent(raw);
 };
@@ -210,6 +215,8 @@ document.addEventListener("DOMContentLoaded", () => {
           category: Z.getCategory(name),
         };
       });
+
+      Z.setProductSlugCacheFromNormalized?.(allProducts);
 
       const categories = [...new Set(allProducts.map((p) => p.category).filter(Boolean))];
 

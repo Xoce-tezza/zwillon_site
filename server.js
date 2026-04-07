@@ -5,6 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const https = require("https");
+const seo = require("./seo-slugs");
 
 const PORT = process.env.PORT || 3000;
 
@@ -331,11 +332,99 @@ app.put("/api/leads/:id", requireAdmin, (req, res) => {
   }
 });
 
+function siteBaseUrl(req) {
+  const env = process.env.SITE_URL && String(process.env.SITE_URL).trim();
+  if (env) return env.replace(/\/$/, "");
+  const proto = String(req.get("x-forwarded-proto") || req.protocol || "https")
+    .split(",")[0]
+    .trim();
+  const host = String(req.get("x-forwarded-host") || req.get("host") || "localhost")
+    .split(",")[0]
+    .trim();
+  return `${proto}://${host}`;
+}
+
+const PRODUCT_HTML_PATH = path.join(__dirname, "product.html");
+
 app.get("/catalog", (req, res) => {
   res.sendFile(path.join(__dirname, "catalog.html"));
 });
 
+app.get("/sitemap.xml", (req, res) => {
+  const base = siteBaseUrl(req);
+  const products = seo.loadProducts();
+  const { idToSlug } = seo.buildProductSlugMaps(products);
+  const rows = [
+    { loc: `${base}/`, p: "1.0" },
+    { loc: `${base}/index.html`, p: "1.0" },
+    { loc: `${base}/catalog.html`, p: "0.9" },
+  ];
+  for (const slug of idToSlug.values()) {
+    rows.push({ loc: `${base}/product/${slug}.html`, p: "0.8" });
+  }
+  const body = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${rows
+  .map(
+    (r) =>
+      `  <url><loc>${String(r.loc).replace(/&(?!amp;|lt;|gt;|apos;|quot;)/g, "&amp;")}</loc><priority>${r.p}</priority></url>`
+  )
+  .join("\n")}
+</urlset>`;
+  res.type("application/xml").send(body);
+});
+
+app.get("/product/:slug.html", (req, res) => {
+  const slug = String(req.params.slug || "")
+    .replace(/\.html$/i, "")
+    .trim();
+  const products = seo.loadProducts();
+  const { slugToId } = seo.buildProductSlugMaps(products);
+  const pid = slugToId.get(slug);
+  if (!pid) {
+    return res
+      .status(404)
+      .type("html")
+      .send(
+        "<!DOCTYPE html><html lang=\"ru\"><head><meta charset=\"UTF-8\"><title>Товар не найден — ZWILLON</title></head><body style=\"background:#0B0B0B;color:#fff;font-family:system-ui;padding:40px;\"><p>Товар не найден.</p><p><a href=\"/catalog.html\" style=\"color:#FFC107;\">Каталог</a></p></body></html>"
+      );
+  }
+  const product = products.find((p) => seo.slugProductShape(p).id === String(pid));
+  if (!product) {
+    return res.status(404).type("text/plain").send("Not found");
+  }
+  let templateHtml;
+  try {
+    templateHtml = fs.readFileSync(PRODUCT_HTML_PATH, "utf8");
+  } catch {
+    return res.status(500).type("text/plain").send("Template read error");
+  }
+  const html = seo.injectProductSeoHtml(templateHtml, product, slug, siteBaseUrl(req));
+  res.type("html").send(html);
+});
+
+app.get("/product.html", (req, res) => {
+  const id = String(req.query.id || "").trim();
+  if (!id) {
+    return res.sendFile(PRODUCT_HTML_PATH);
+  }
+  const products = seo.loadProducts();
+  const { idToSlug } = seo.buildProductSlugMaps(products);
+  const slug = idToSlug.get(id);
+  if (!slug) {
+    return res.status(404).type("text/plain").send("Product not found");
+  }
+  res.redirect(301, `/product/${slug}.html`);
+});
+
 app.get("/product", (req, res) => {
+  const id = String(req.query.id || "").trim();
+  if (id) {
+    const products = seo.loadProducts();
+    const { idToSlug } = seo.buildProductSlugMaps(products);
+    const slug = idToSlug.get(id);
+    if (slug) return res.redirect(301, `/product/${slug}.html`);
+  }
   const qs = new URLSearchParams(req.query).toString();
   const suffix = qs ? `?${qs}` : "";
   res.redirect(302, `/product.html${suffix}`);
