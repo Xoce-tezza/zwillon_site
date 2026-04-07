@@ -587,16 +587,22 @@
   <script type="module" src="./index.js"></script>
 
 <script>
-const CLOUD_NAME = "dyciy0kdx";
+window.addEventListener("DOMContentLoaded", () => {
+  const CLOUD_NAME = "dyciy0kdx";
 
-document.querySelectorAll("img").forEach(img => {
-  const src = img.getAttribute("src");
+  document.querySelectorAll("img").forEach(img => {
+    const src = img.getAttribute("src");
 
-  if (src && src.includes("/images/")) {
-    const fileName = src.split("/images/")[1];
+    if (src && src.includes("images/")) {
+      const fileName = src.split("images/")[1];
 
-    img.src = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${fileName}`;
-  }
+      const newUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${fileName}`;
+
+      console.log("Замена:", src, "→", newUrl);
+
+      img.src = newUrl;
+    }
+  });
 });
 </script>
 
