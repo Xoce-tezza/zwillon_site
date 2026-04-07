@@ -23,7 +23,7 @@ window.openProduct = function openProduct(id) {
     window.location.href = Z.getProductPageUrlById(raw);
     return;
   }
-  window.location.href = "product.html?id=" + encodeURIComponent(raw);
+  window.location.href = "/product.html?id=" + encodeURIComponent(raw);
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -174,8 +174,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function getCardImageSrc(product) {
     const src = getProductImage(product);
-    if (src && src !== "images/placeholder.png") return src;
-    return "images/placeholder.png";
+    if (src && src !== "/images/placeholder.png") return src;
+    return "/images/placeholder.png";
   }
 
   let heroProducts = [];
@@ -194,7 +194,7 @@ document.addEventListener("DOMContentLoaded", () => {
     subEl.textContent = "Минимальный заказ от 10 шт";
 
     let src = getProductImage(product);
-    if (!src) src = "images/placeholder.png";
+    if (!src) src = "/images/placeholder.png";
     const sep = src.includes("?") ? "&" : "?";
     imgEl.src = src + sep + "v=" + Date.now();
   }
@@ -234,12 +234,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const productHref =
       typeof Z.getProductPageUrlById === "function"
         ? Z.getProductPageUrlById(id)
-        : "product.html?id=" + encodeURIComponent(id);
+        : "/product.html?id=" + encodeURIComponent(id);
     return `
       <article class="card reveal group rounded-2xl border border-white/10 bg-[#111] overflow-hidden flex flex-col h-full" data-reveal>
         <a href="${Z.escapeHtml(productHref)}" class="block flex flex-col h-full">
           <div class="relative bg-white flex items-center justify-center p-0 overflow-hidden rounded-t-2xl min-h-[220px]">
-            <img src="${Z.escapeHtml(imgSrc)}" onerror="this.src='images/placeholder.png'" referrerpolicy="no-referrer" alt="${Z.escapeHtml(name)}" class="image-zoom transition-transform duration-500 w-full h-[220px] object-contain" loading="lazy" />
+            <img src="${Z.escapeHtml(imgSrc)}" onerror="this.src='/images/placeholder.png'" referrerpolicy="no-referrer" alt="${Z.escapeHtml(name)}" class="image-zoom transition-transform duration-500 w-full h-[220px] object-contain" loading="lazy" />
           </div>
           <div class="p-5 flex flex-col flex-1">
             <h3 class="text-[16px] font-semibold leading-snug">${Z.escapeHtml(name)}</h3>

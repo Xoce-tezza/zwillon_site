@@ -359,6 +359,17 @@ function siteBaseUrl(req) {
   return `${proto}://${host}`;
 }
 
+/**
+ * href="catalog.html" на странице /product/x.html резолвится в /product/catalog.html (404).
+ * Принудительно ведём основные страницы с корня.
+ */
+function rootifyHtmlPageHrefs(html) {
+  return String(html || "").replace(
+    /\bhref=(["'])(catalog|index|about|category|product)\.html(#[^"']*|)\1/gi,
+    (m, q, name, hash) => `href=${q}/${name}.html${hash}${q}`
+  );
+}
+
 const PRODUCT_HTML_PATH = path.join(__dirname, "product.html");
 
 app.get("/catalog", (req, res) => {
@@ -414,14 +425,20 @@ app.get("/product/:slug.html", (req, res) => {
   } catch {
     return res.status(500).type("text/plain").send("Template read error");
   }
-  const html = seo.injectProductSeoHtml(templateHtml, product, slug, siteBaseUrl(req));
+  let html = seo.injectProductSeoHtml(templateHtml, product, slug, siteBaseUrl(req));
+  html = rootifyHtmlPageHrefs(html);
   res.type("html").send(html);
 });
 
 app.get("/product.html", (req, res) => {
   const id = String(req.query.id || "").trim();
   if (!id) {
-    return res.sendFile(PRODUCT_HTML_PATH);
+    try {
+      const raw = fs.readFileSync(PRODUCT_HTML_PATH, "utf8");
+      return res.type("html").send(rootifyHtmlPageHrefs(raw));
+    } catch {
+      return res.sendFile(PRODUCT_HTML_PATH);
+    }
   }
   const products = seo.loadProducts();
   const { idToSlug } = seo.buildProductSlugMaps(products);
@@ -447,6 +464,11 @@ app.get("/product", (req, res) => {
 
 app.get(["/admin.html", "/admin"], (_req, res) => {
   res.status(404).type("text/plain").send("Not found");
+});
+
+/** «О компании» на главной; корневой URL — чтобы ссылки не ломались с вложенных страниц. */
+app.get("/about.html", (_req, res) => {
+  res.redirect(301, "/index.html#about");
 });
 
 app.listen(PORT, () => {

@@ -240,10 +240,10 @@
         <a href="${escapeHtml(
           window.ZWILLON && typeof window.ZWILLON.getProductPageUrlById === "function"
             ? window.ZWILLON.getProductPageUrlById(product.id)
-            : "product.html?id=" + encodeURIComponent(product.id)
+            : "/product.html?id=" + encodeURIComponent(product.id)
         )}" class="block flex flex-col h-full">
           <div class="relative h-[240px] bg-white flex items-center justify-center p-4">
-            <img src="${escapeHtml(imageSrc)}" onerror="this.src='images/placeholder.png'" referrerpolicy="no-referrer" alt="${escapeHtml(product.name_ru)}" class="w-full h-full object-contain image-zoom transition-transform duration-500" loading="lazy" />
+            <img src="${escapeHtml(imageSrc)}" onerror="this.src='/images/placeholder.png'" referrerpolicy="no-referrer" alt="${escapeHtml(product.name_ru)}" class="w-full h-full object-contain image-zoom transition-transform duration-500" loading="lazy" />
           </div>
           <div class="p-5 flex flex-col flex-1">
             <div class="text-xs tracking-[.18em] text-[#AAAAAA] font-semibold">${escapeHtml(categoryLabel)}</div>

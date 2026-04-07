@@ -286,13 +286,13 @@
 
   <header id="siteHeader" class="sticky top-0 z-50 bg-[#0B0B0B]/80 backdrop-blur border-b border-white/10">
     <div class="site-container h-[72px] flex items-center justify-between">
-      <a href="index.html" class="logo">ZWILLON</a>
+      <a href="/index.html" class="logo">ZWILLON</a>
 
       <nav class="nav hidden md:flex items-center gap-8 text-muted">
-        <a class="hover:text-white transition" href="catalog.html">Каталог</a>
-        <a class="hover:text-white transition" href="#about">О компании</a>
-        <a class="hover:text-white transition" href="#business">Для бизнеса</a>
-        <a class="hover:text-white transition" href="#contacts">Контакты</a>
+        <a class="hover:text-white transition" href="/catalog.html">Каталог</a>
+        <a class="hover:text-white transition" href="/index.html#about">О компании</a>
+        <a class="hover:text-white transition" href="/index.html#business">Для бизнеса</a>
+        <a class="hover:text-white transition" href="/index.html#contacts">Контакты</a>
       </nav>
 
       <a href="#" onclick="openLeadModal('Запрос прайса'); return false;" class="hidden md:inline-flex items-center justify-center px-5 py-2 rounded-xl bg-accent text-black font-semibold text-[14px] shadow-accent btn-premium">
@@ -309,10 +309,10 @@
     </div>
     <div id="mobilePanel" class="md:hidden hidden border-t border-white/10 bg-[#0B0B0B]/70">
       <div class="site-container py-3 flex flex-col gap-2 text-[14px]">
-        <a class="py-2 text-muted hover:text-white transition" href="catalog.html">Каталог</a>
-        <a class="py-2 text-muted hover:text-white transition" href="#about">О компании</a>
-        <a class="py-2 text-muted hover:text-white transition" href="#business">Для бизнеса</a>
-        <a class="py-2 text-muted hover:text-white transition" href="#contacts">Контакты</a>
+        <a class="py-2 text-muted hover:text-white transition" href="/catalog.html">Каталог</a>
+        <a class="py-2 text-muted hover:text-white transition" href="/index.html#about">О компании</a>
+        <a class="py-2 text-muted hover:text-white transition" href="/index.html#business">Для бизнеса</a>
+        <a class="py-2 text-muted hover:text-white transition" href="/index.html#contacts">Контакты</a>
         <a href="#" onclick="openLeadModal('Запрос прайса'); return false;" class="mt-2 px-4 py-2 rounded-xl bg-accent text-black font-semibold shadow-accent btn-premium text-center">Получить прайс</a>
       </div>
     </div>
@@ -344,7 +344,7 @@
               <a href="#" onclick="openLeadModal('Запрос прайса'); return false;" class="btn-premium inline-flex items-center justify-center px-6 py-3 rounded-2xl bg-accent text-black font-semibold shadow-accent">
                 Получить прайс
               </a>
-              <a href="#contacts" class="btn-premium inline-flex items-center justify-center px-6 py-3 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition font-semibold">
+              <a href="/index.html#contacts" class="btn-premium inline-flex items-center justify-center px-6 py-3 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition font-semibold">
                 Стать партнёром
               </a>
             </div>
@@ -369,7 +369,7 @@
         <div class="relative">
           <div class="reveal" data-reveal data-delay="90">
             <div class="hero-visual">
-              <img id="heroImage" class="hero-image" src="images/placeholder.png" alt="ZWILLON product" width="800" height="800" decoding="async" fetchpriority="high" />
+              <img id="heroImage" class="hero-image" src="/images/placeholder.png" alt="ZWILLON product" width="800" height="800" decoding="async" fetchpriority="high" />
               <div class="hero-product-info">
                 <div class="badge">ХИТ ПРОДАЖ</div>
                 <h3 id="heroTitle" class="hero-title">Товар</h3>
@@ -413,51 +413,74 @@
       </div>
     </section>
 
-    <!-- ADVANTAGES -->
+    <!-- О КОМПАНИИ -->
     <section id="about" class="py-[80px] border-t border-white/10">
       <div class="site-container">
-        <div class="reveal" data-reveal>
-          <p class="text-xs tracking-[.18em] text-muted font-semibold">ПРЕИМУЩЕСТВА</p>
-          <h2 class="mt-3 text-3xl font-bold">Почему выбирают нас</h2>
+        <header class="reveal mb-10" data-reveal>
+          <p class="text-xs tracking-[.18em] text-muted font-semibold">О КОМПАНИИ</p>
+          <h2 class="mt-3 text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+            ZWILLON — поставки посуды и кухонной техники для бизнеса в Казахстане
+          </h2>
+        </header>
+
+        <div class="reveal mb-12 max-w-[820px] space-y-5" data-reveal data-delay="60">
+          <p class="text-[15px] sm:text-[16px] leading-relaxed text-white/90">
+            Мы работаем как оптовый партнёр для кафе, ресторанов, сетей общественного питания, дистрибьюторов и закупок для корпоративных кухонь. Фокус — на стабильные партии, предсказуемое качество и понятные договорённости без розничного канала.
+          </p>
+          <p class="text-[15px] sm:text-[16px] leading-relaxed text-muted">
+            Подбираем ассортимент под ваш формат: от витрины и сервировки до оборудования горячего цеха. Сопровождаем заявку спецификацией, сроками и условиями отгрузки — чтобы закупка оставалась управляемой даже при высоком обороте.
+          </p>
         </div>
 
-        <div class="mt-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <article class="reveal card-hover rounded-2xl border border-white/10 bg-white/5 p-5" data-reveal data-delay="0">
-            <div class="flex items-center justify-between">
-              <div class="w-11 h-11 rounded-xl border border-white/10 bg-black/30 grid place-items-center text-accent">↗</div>
-              <div class="text-xs text-muted">01</div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <article class="reveal rounded-xl border border-white/10 bg-white/5 p-6 sm:p-7 card-hover" data-reveal data-delay="0">
+            <div class="flex items-start justify-between gap-3">
+              <div class="w-10 h-10 shrink-0 rounded-lg border border-white/10 bg-black/30 grid place-items-center text-accent text-lg font-bold">1</div>
+              <span class="text-[11px] uppercase tracking-wider text-muted">B2B</span>
             </div>
-            <h3 class="mt-4 font-semibold text-[16px]">Прямые поставки от производителя</h3>
-            <p class="mt-2 text-sm text-muted">Стабильные партии и прозрачные условия сотрудничества для B2B.</p>
+            <h3 class="mt-5 text-[17px] font-semibold text-white leading-snug">Прозрачные оптовые условия</h3>
+            <p class="mt-3 text-sm text-muted leading-relaxed">
+              Фиксируем объём, ценовой ориентир и логистику до отгрузки. Удобно для закупок по согласованию и для регулярных партий под ваш график.
+            </p>
           </article>
 
-          <article class="reveal card-hover rounded-2xl border border-white/10 bg-white/5 p-5" data-reveal data-delay="70">
-            <div class="flex items-center justify-between">
-              <div class="w-11 h-11 rounded-xl border border-white/10 bg-black/30 grid place-items-center text-accent">◉</div>
-              <div class="text-xs text-muted">02</div>
+          <article class="reveal rounded-xl border border-white/10 bg-white/5 p-6 sm:p-7 card-hover" data-reveal data-delay="80">
+            <div class="flex items-start justify-between gap-3">
+              <div class="w-10 h-10 shrink-0 rounded-lg border border-white/10 bg-black/30 grid place-items-center text-accent text-lg font-bold">2</div>
+              <span class="text-[11px] uppercase tracking-wider text-muted">HoReCa</span>
             </div>
-            <h3 class="mt-4 font-semibold text-[16px]">Склад и наличие</h3>
-            <p class="mt-2 text-sm text-muted">Ключевые позиции доступны для регулярных и повторных закупок.</p>
+            <h3 class="mt-5 text-[17px] font-semibold text-white leading-snug">Подбор под сценарий эксплуатации</h3>
+            <p class="mt-3 text-sm text-muted leading-relaxed">
+              Учитываем интенсивность смены, мойку, хранение и единообразие партии — чтобы инвентарь выдерживал реальный ритм кухни и зала.
+            </p>
           </article>
 
-          <article class="reveal card-hover rounded-2xl border border-white/10 bg-white/5 p-5" data-reveal data-delay="140">
-            <div class="flex items-center justify-between">
-              <div class="w-11 h-11 rounded-xl border border-white/10 bg-black/30 grid place-items-center text-accent">₸</div>
-              <div class="text-xs text-muted">03</div>
+          <article class="reveal rounded-xl border border-white/10 bg-white/5 p-6 sm:p-7 card-hover" data-reveal data-delay="160">
+            <div class="flex items-start justify-between gap-3">
+              <div class="w-10 h-10 shrink-0 rounded-lg border border-white/10 bg-black/30 grid place-items-center text-accent text-lg font-bold">3</div>
+              <span class="text-[11px] uppercase tracking-wider text-muted">Партии</span>
             </div>
-            <h3 class="mt-4 font-semibold text-[16px]">Оптовые цены</h3>
-            <p class="mt-2 text-sm text-muted">Выгодные условия под объём и формат: от точки до сети.</p>
+            <h3 class="mt-5 text-[17px] font-semibold text-white leading-snug">Стабильность поставок</h3>
+            <p class="mt-3 text-sm text-muted leading-relaxed">
+              Ориентируемся на повторные закупки и предсказуемое наличие ключевых позиций — меньше срывов при планировании меню и загрузки склада.
+            </p>
           </article>
 
-          <article class="reveal card-hover rounded-2xl border border-white/10 bg-white/5 p-5" data-reveal data-delay="210">
-            <div class="flex items-center justify-between">
-              <div class="w-11 h-11 rounded-xl border border-white/10 bg-black/30 grid place-items-center text-accent">⇢</div>
-              <div class="text-xs text-muted">04</div>
+          <article class="reveal rounded-xl border border-white/10 bg-white/5 p-6 sm:p-7 card-hover" data-reveal data-delay="240">
+            <div class="flex items-start justify-between gap-3">
+              <div class="w-10 h-10 shrink-0 rounded-lg border border-white/10 bg-black/30 grid place-items-center text-accent text-lg font-bold">4</div>
+              <span class="text-[11px] uppercase tracking-wider text-muted">Сервис</span>
             </div>
-            <h3 class="mt-4 font-semibold text-[16px]">Быстрая отгрузка</h3>
-            <p class="mt-2 text-sm text-muted">Согласуем поставку под ваш график и канал продаж.</p>
+            <h3 class="mt-5 text-[17px] font-semibold text-white leading-snug">Сопровождение сделки</h3>
+            <p class="mt-3 text-sm text-muted leading-relaxed">
+              Документы, маркировка и согласование деталей — в одном контуре коммуникации. Экономим время закупки и юридического сопровождения.
+            </p>
           </article>
         </div>
+
+        <p class="reveal mt-12 pt-10 border-t border-white/10 max-w-[900px] text-[15px] leading-relaxed text-muted" data-reveal data-delay="120">
+          ZWILLON выстраивает долгосрочные отношения с B2B-клиентами: честные ожидания по срокам и качеству, без навязанных схем и с фокусом на вашу операционную эффективность. Свяжитесь с нами — подготовим предложение под ваш объём и категорию закупки.
+        </p>
       </div>
     </section>
 
@@ -530,7 +553,7 @@
     <div class="site-container">
       <div class="grid md:grid-cols-4 gap-8">
         <div class="reveal" data-reveal>
-          <a href="index.html" class="logo">ZWILLON</a>
+          <a href="/index.html" class="logo">ZWILLON</a>
           <p class="mt-4 text-sm text-muted max-w-[260px] leading-relaxed">Посуда и техника оптом: кафе, рестораны, опт, маркетплейсы.</p>
         </div>
 
@@ -543,10 +566,10 @@
         <div class="reveal" data-reveal>
           <p class="text-xs tracking-[.18em] text-muted font-semibold">ССЫЛКИ</p>
           <div class="mt-3 space-y-2 text-sm text-muted">
-            <a class="block hover:text-white transition" href="catalog.html">Каталог</a>
-            <a class="block hover:text-white transition" href="#about">О компании</a>
-            <a class="block hover:text-white transition" href="#business">Для бизнеса</a>
-            <a class="block hover:text-white transition" href="#contacts">Контакты</a>
+            <a class="block hover:text-white transition" href="/catalog.html">Каталог</a>
+            <a class="block hover:text-white transition" href="/index.html#about">О компании</a>
+            <a class="block hover:text-white transition" href="/index.html#business">Для бизнеса</a>
+            <a class="block hover:text-white transition" href="/index.html#contacts">Контакты</a>
           </div>
         </div>
 
@@ -582,9 +605,9 @@
     </div>
   </div>
 
-  <script src="./zwillon-shared.js"></script>
-  <script src="./product-lead.js"></script>
-  <script type="module" src="./index.js"></script>
+  <script src="/zwillon-shared.js"></script>
+  <script src="/product-lead.js"></script>
+  <script type="module" src="/index.js"></script>
 
 </body>
 </html>

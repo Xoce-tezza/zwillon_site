@@ -26,12 +26,12 @@ function getGalleryImages(product) {
   const Z = window.ZWILLON;
   const toSrc = (u) => (Z && Z.siteAssetImageSrc ? Z.siteAssetImageSrc(u || "") : String(u || "").replace(/^\//, ""));
   const all = Array.isArray(product?.images) ? product.images : [];
-  let paths = all.slice(1).map(toSrc).filter((s) => s && s !== "images/placeholder.png");
+  let paths = all.slice(1).map(toSrc).filter((s) => s && s !== "/images/placeholder.png");
   if (!paths.length && all[0]) {
     const s = toSrc(all[0]);
-    if (s && s !== "images/placeholder.png") paths = [s];
+    if (s && s !== "/images/placeholder.png") paths = [s];
   }
-  return paths.length ? paths : ["images/placeholder.png"];
+  return paths.length ? paths : ["/images/placeholder.png"];
 }
 
 let currentIndex = 0;
@@ -65,7 +65,7 @@ function updateImage(images) {
       img.src = images[currentIndex];
       img.style.opacity = "1";
       img.onerror = function () {
-        img.src = "images/placeholder.png";
+        img.src = "/images/placeholder.png";
       };
     }, 150);
   }
@@ -145,7 +145,7 @@ function renderProduct(p) {
     <div class="apple-product">
       <div class="gallery">
         <button class="gal-nav prev" type="button" onclick="prevImage()" ${images.length > 1 ? "" : "hidden"}>‹</button>
-        <img id="mainImage" src="${esc(images[0])}" alt="${esc(name)}" class="main-img" referrerpolicy="no-referrer" onerror="this.src='images/placeholder.png'"/>
+        <img id="mainImage" src="${esc(images[0])}" alt="${esc(name)}" class="main-img" referrerpolicy="no-referrer" onerror="this.src='/images/placeholder.png'"/>
         <button class="gal-nav next" type="button" onclick="nextImage()" ${images.length > 1 ? "" : "hidden"}>›</button>
 
         <div class="thumbs">
@@ -158,7 +158,7 @@ function renderProduct(p) {
               data-index="${i}"
               onclick="selectImage(${i})"
               referrerpolicy="no-referrer"
-              onerror="this.src='images/placeholder.png'"
+              onerror="this.src='/images/placeholder.png'"
             />
           `
             )
@@ -210,7 +210,7 @@ function renderProduct(p) {
 }
 
 async function loadData() {
-  const res = await fetch("./data.local.json?cache=" + Date.now());
+  const res = await fetch("/data.local.json?cache=" + Date.now());
   const data = await res.json();
   console.log("DATA LOADED:", Array.isArray(data) ? data.length : 0);
   return data;
@@ -278,7 +278,7 @@ async function init() {
   if (!id) {
     showProductError(
       "ID НЕ ПЕРЕДАН",
-      'Откройте карточку из <a href="catalog.html" class="text-accent underline hover:text-white">каталога</a> или перейдите по ссылке вида <code class="text-accent">/product/название.html</code>.'
+      'Откройте карточку из <a href="/catalog.html" class="text-accent underline hover:text-white">каталога</a> или перейдите по ссылке вида <code class="text-accent">/product/название.html</code>.'
     );
     return;
   }

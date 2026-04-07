@@ -100,7 +100,7 @@
     accessories: "Аксессуары",
   };
 
-  const PLACEHOLDER_IMAGE_SRC = "images/placeholder.png";
+  const PLACEHOLDER_IMAGE_SRC = "/images/placeholder.png";
   const CLOUDINARY_UPLOAD_BASE =
     "https://res.cloudinary.com/dyciy0kdx/image/upload/";
 
@@ -203,7 +203,7 @@
 
   /** Критичная загрузка data.local.json без кэша. */
   async function loadData() {
-    const res = await fetch("./data.local.json?cache=" + Date.now());
+    const res = await fetch("/data.local.json?cache=" + Date.now());
     const data = await res.json();
     console.log("DATA LOADED:", Array.isArray(data) ? data.length : 0);
     return data;
@@ -382,9 +382,9 @@
 
   function getProductPageUrlById(id) {
     const s = String(id || "").trim();
-    if (!s) return "catalog.html";
+    if (!s) return "/catalog.html";
     if (!_productSlugCache || !_productSlugCache.idToSlug[s])
-      return "product.html?id=" + encodeURIComponent(s);
+      return "/product.html?id=" + encodeURIComponent(s);
     return "/product/" + encodeURIComponent(_productSlugCache.idToSlug[s]) + ".html";
   }
 
