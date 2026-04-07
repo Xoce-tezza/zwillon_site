@@ -136,6 +136,21 @@ app.use(
 
 app.use(express.json({ limit: "256kb" }));
 
+const staticRoot = path.join(__dirname);
+
+/** Статика первой очередью: .js/.css и т.д. не перехватываются SSR-маршрутами. */
+app.use(
+  express.static(staticRoot, {
+    index: false,
+    setHeaders(res, filePath) {
+      const lower = String(filePath || "").toLowerCase();
+      if (lower.endsWith(".js") || lower.endsWith(".mjs")) {
+        res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+      }
+    },
+  })
+);
+
 function clientIp(req) {
   const xf = String(req.headers["x-forwarded-for"] || "");
   const first = xf.split(",")[0].trim();
@@ -433,8 +448,6 @@ app.get("/product", (req, res) => {
 app.get(["/admin.html", "/admin"], (_req, res) => {
   res.status(404).type("text/plain").send("Not found");
 });
-
-app.use(express.static(__dirname));
 
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
