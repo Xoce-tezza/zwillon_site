@@ -1,4 +1,3 @@
-console.log("SERVER FILE LOADED CORRECTLY");
 const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
@@ -137,9 +136,11 @@ app.use(
 
 app.use(express.json({ limit: "256kb" }));
 
-const staticRoot = path.join(__dirname);
+app.use(express.static(__dirname));
 
-app.use(express.static(staticRoot));
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
@@ -466,33 +467,19 @@ app.get("/about.html", (_req, res) => {
 });
 
 app.get("*", (req, res) => {
-  // ignore API
   if (req.path.startsWith("/api/")) {
-    return res.status(404).json({ success: false, error: "not_found" });
+    return res.status(404).json({ error: "Not found" });
   }
 
-  // ignore real files (css/js/images)
-  if (/\.[a-z0-9]{1,8}$/i.test(req.path)) {
+  if (req.path.includes(".")) {
     return res.status(404).send("Not found");
   }
 
-  // fallback -> always homepage
-  return res.sendFile(path.join(__dirname, "index.html"));
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
+console.log("SERVER STARTED OK");
+
 app.listen(PORT, () => {
-  console.log("Server running on port " + PORT);
-  console.log("CRM path: /zwillon-admin-secure.html · Catalog: /catalog.html");
-  if (!COOKIE_SECURE) {
-    console.log(
-      "Cookie: без Secure (локально). На HTTPS задайте NODE_ENV=production или COOKIE_SECURE=1."
-    );
-  }
-  if (!telegramReady()) {
-    console.log(
-      "Telegram: задайте TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID в окружении Render."
-    );
-  } else {
-    console.log("Telegram: уведомления о новых заявках включены.");
-  }
+  console.log("Server running on port", PORT);
 });
