@@ -199,69 +199,26 @@ function buildProductSeoDescription(product) {
 }
 
 function metaDescriptionFromDescriptionData(product, d) {
-  const name = (
-    String(product.name_ru || product.name || "").trim() || "Товар ZWILLON"
-  )
+  const name = (String(product.name_ru || product.name || "").trim() || "Товар ZWILLON")
     .replace(/\s+/g, " ")
     .trim();
-  const catLower = String(d.categoryLabel || "").toLowerCase();
-  const b0 = (d.benefits[0] || "").replace(/\s+/g, " ").trim();
-  let key = "";
-  if (b0.length >= 22 && b0.length <= 92) {
-    key = b0;
-  } else {
-    const parts = d.short.split(/(?<=[.!?])\s+/).filter(Boolean);
-    key = (parts[0] || d.short).replace(/\.$/, "").trim();
-    if (key.length > 90) {
-      key = key.slice(0, 87).trim();
-      const cut = key.lastIndexOf(" ");
-      if (cut > 40) key = key.slice(0, cut);
-      key += "…";
-    }
-  }
-  const tail = " Оптом для кафе, ресторанов, HoReCa — ZWILLON, Казахстан.";
-  function assemble(k) {
-    const kk = String(k).replace(/\s+$/, "").replace(/\.+$/, "");
-    return `${name}. ${kk}.${tail}`
+  const short = String(d.short || "").replace(/\s+/g, " ").trim();
+  const leadFeature = String((d.features && d.features[0]) || "").replace(/\s+/g, " ").trim();
+  let out = `${name} оптом для кафе и кухни. ${leadFeature || short || "Надежная модель для ежедневной работы."} Поставка по Казахстану.`
+    .replace(/\s+/g, " ")
+    .trim();
+  if (out.length > 160) {
+    out = `${name} оптом для кафе и кухни. ${short || "Надежная модель для ежедневной работы."} Поставка по Казахстану.`
       .replace(/\s+/g, " ")
-      .replace(/\.\s*\./g, ".")
       .trim();
   }
-  let out = assemble(key);
-  if (out.length > 160) {
-    const budget = 160 - name.length - tail.length - 3;
-    let k2 = key;
-    if (k2.length > budget) {
-      k2 = k2.slice(0, Math.max(28, budget - 1)).trim();
-      const ls = k2.lastIndexOf(" ");
-      if (ls > 22) k2 = k2.slice(0, ls);
-      k2 += "…";
-    }
-    out = assemble(k2);
-  }
   if (out.length > 160) {
     out = out.slice(0, 157).trim();
-    const ls = out.lastIndexOf(" ");
-    if (ls > 110) out = out.slice(0, ls);
-    out += "…";
+    const cut = out.lastIndexOf(" ");
+    if (cut > 90) out = out.slice(0, cut);
+    out += "...";
   }
-  if (out.length < 140) {
-    out =
-      `${name} — ${catLower} оптом для ресторанов, кафе и сетей HoReCa. Поставщик ZWILLON, Казахстан, документы B2B.`.replace(
-        /\s+/g,
-        " "
-      );
-  }
-  if (out.length > 160) {
-    out = out.slice(0, 157).trim();
-    const ls = out.lastIndexOf(" ");
-    if (ls > 100) out = out.slice(0, ls);
-    out += "…";
-  }
-  if (out.length < 140) {
-    out = `${out} Партии и логистика под запрос.`.replace(/\s+/g, " ").slice(0, 160);
-  }
-  return out.slice(0, 160);
+  return out;
 }
 
 function buildProductKeywords(product, descData) {

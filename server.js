@@ -151,6 +151,10 @@ app.use(
   })
 );
 
+app.get("/", (_req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
+
 function clientIp(req) {
   const xf = String(req.headers["x-forwarded-for"] || "");
   const first = xf.split(",")[0].trim();
@@ -412,7 +416,7 @@ app.get("/product/:slug.html", (req, res) => {
       .status(404)
       .type("html")
       .send(
-        "<!DOCTYPE html><html lang=\"ru\"><head><meta charset=\"UTF-8\"><title>Товар не найден — ZWILLON</title></head><body style=\"background:#0B0B0B;color:#fff;font-family:system-ui;padding:40px;\"><p>Товар не найден.</p><p><a href=\"/catalog.html\" style=\"color:#FFC107;\">Каталог</a></p></body></html>"
+        "<!DOCTYPE html><html lang=\"ru\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Товар не найден — ZWILLON</title></head><body style=\"margin:0;background:#0B0B0B;color:#fff;font-family:system-ui\"><main style=\"max-width:860px;margin:0 auto;padding:56px 24px\"><h1 style=\"margin:0 0 14px;font-size:32px;line-height:1.2\">Товар не найден</h1><p style=\"margin:0 0 26px;color:#aaa;line-height:1.65\">Похоже, такой карточки больше нет или ссылка устарела.</p><a href=\"/catalog.html\" style=\"display:inline-block;padding:12px 18px;border-radius:12px;background:#FFC107;color:#111;text-decoration:none;font-weight:700\">Вернуться в каталог</a></main></body></html>"
       );
   }
   const product = products.find((p) => seo.slugProductShape(p).id === String(pid));
@@ -469,6 +473,16 @@ app.get(["/admin.html", "/admin"], (_req, res) => {
 /** «О компании» на главной; корневой URL — чтобы ссылки не ломались с вложенных страниц. */
 app.get("/about.html", (_req, res) => {
   res.redirect(301, "/index.html#about");
+});
+
+app.get("*", (req, res) => {
+  if (req.path.startsWith("/api/")) {
+    return res.status(404).json({ success: false, error: "not_found" });
+  }
+  if (/\.[a-z0-9]{1,8}$/i.test(req.path)) {
+    return res.status(404).type("text/plain").send("Not found");
+  }
+  return res.sendFile(path.join(__dirname, "index.html"));
 });
 
 app.listen(PORT, () => {
