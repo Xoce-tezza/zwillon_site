@@ -138,20 +138,9 @@ app.use(express.json({ limit: "256kb" }));
 
 const staticRoot = path.join(__dirname);
 
-/** Статика первой очередью: .js/.css и т.д. не перехватываются SSR-маршрутами. */
-app.use(
-  express.static(staticRoot, {
-    index: false,
-    setHeaders(res, filePath) {
-      const lower = String(filePath || "").toLowerCase();
-      if (lower.endsWith(".js") || lower.endsWith(".mjs")) {
-        res.setHeader("Content-Type", "application/javascript; charset=utf-8");
-      }
-    },
-  })
-);
+app.use(express.static(staticRoot));
 
-app.get("/", (_req, res) => {
+app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
@@ -476,12 +465,17 @@ app.get("/about.html", (_req, res) => {
 });
 
 app.get("*", (req, res) => {
+  // ignore API
   if (req.path.startsWith("/api/")) {
     return res.status(404).json({ success: false, error: "not_found" });
   }
+
+  // ignore real files (css/js/images)
   if (/\.[a-z0-9]{1,8}$/i.test(req.path)) {
-    return res.status(404).type("text/plain").send("Not found");
+    return res.status(404).send("Not found");
   }
+
+  // fallback -> always homepage
   return res.sendFile(path.join(__dirname, "index.html"));
 });
 
