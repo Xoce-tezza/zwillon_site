@@ -1,3 +1,4 @@
+console.log("SERVER FILE LOADED CORRECTLY");
 const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
