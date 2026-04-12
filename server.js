@@ -37,48 +37,188 @@ function escapeTelegramHtml(s) {
     .replace(/>/g, "&gt;");
 }
 
-function sendTelegramMessage(text) {
-  if (!telegramReady()) return Promise.resolve();
+function phoneDigitsOnly(phone) {
+  return String(phone || "").replace(/\D/g, "");
+}
 
-  const payload = JSON.stringify({
-    chat_id: TELEGRAM_CHAT_ID,
-    text,
-    parse_mode: "HTML",
-  });
+function leadStatusLabelRu(status) {
+  const s = String(status || "new");
+  if (s === "in_work") return "В работе";
+  if (s === "closed" || s === "done") return "Закрыто";
+  if (s === "rejected") return "Не актуально";
+  return "Новая";
+}
 
-  const url = new URL(
-    `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`
+function buildLeadTelegramHtml(lead) {
+  const productName = String(lead.product || "").trim() || "товар";
+  const msgText =
+    lead.message != null
+      ? String(lead.message)
+      : lead.comment != null
+        ? String(lead.comment)
+        : "";
+  const managerLine = lead.manager
+    ? `👨‍💼 В работе: ${escapeTelegramHtml(lead.manager)}`
+    : "👨‍💼 В работе: -";
+  const statusLine = `📊 Статус: ${escapeTelegramHtml(leadStatusLabelRu(lead.status))}`;
+  const when = lead.date
+    ? new Date(lead.date).toLocaleString("ru-RU", {
+        dateStyle: "short",
+        timeStyle: "short",
+      })
+    : new Date().toLocaleString("ru-RU", {
+        dateStyle: "short",
+        timeStyle: "short",
+      });
+
+  return (
+    `🔥 <b>Новая заявка</b>\n\n` +
+    `👤 Имя: ${escapeTelegramHtml(lead.name)}\n` +
+    `📞 Телефон: ${escapeTelegramHtml(lead.phone)}\n` +
+    `🏙 Город: ${lead.city ? escapeTelegramHtml(lead.city) : "-"}\n` +
+    `📦 Товар: ${escapeTelegramHtml(productName)}\n\n` +
+    `💬 ${msgText ? escapeTelegramHtml(msgText) : "-"}\n\n` +
+    `${managerLine}\n` +
+    `${statusLine}\n\n` +
+    `⏰ ${escapeTelegramHtml(when)}`
   );
+}
+
+function buildLeadInlineKeyboard(lead) {
+  const digits = phoneDigitsOnly(lead.phone);
+  const productName = String(lead.product || "").trim() || "товар";
+  const waText = `Здравствуйте! Вы оставляли заявку на ZWILLON (${productName})`;
+  const waUrl =
+    digits.length >= 10
+      ? `https://wa.me/${digits}?text=${encodeURIComponent(waText)}`
+      : `https://wa.me/?text=${encodeURIComponent(waText)}`;
+  const telUrl = digits.length >= 10 ? `tel:+${digits.replace(/^\+/, "")}` : "tel:";
+
+  return {
+    inline_keyboard: [
+      [
+        { text: "🟢 WhatsApp", url: waUrl },
+        { text: "📞 Позвонить", url: telUrl },
+      ],
+      [
+        { text: "✅ Взял в работу", callback_data: "take" },
+        { text: "💰 Закрыто", callback_data: "done" },
+        { text: "❌ Не актуально", callback_data: "reject" },
+      ],
+    ],
+  };
+}
+
+/**
+ * Универсальный вызов Telegram Bot API (JSON).
+ * @returns {Promise<object|null>}
+ */
+function telegramApiCall(method, payload) {
+  if (!telegramReady()) return Promise.resolve(null);
+
+  const body = JSON.stringify(payload);
+  const urlPath = `/bot${TELEGRAM_TOKEN}/${method}`;
 
   return new Promise((resolve, reject) => {
     const req = https.request(
       {
-        hostname: url.hostname,
-        path: url.pathname,
+        hostname: "api.telegram.org",
+        path: urlPath,
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(payload, "utf8"),
+          "Content-Length": Buffer.byteLength(body, "utf8"),
         },
       },
       (res) => {
-        let body = "";
+        let raw = "";
         res.on("data", (ch) => {
-          body += ch;
+          raw += ch;
         });
         res.on("end", () => {
-          if (res.statusCode && res.statusCode >= 400) {
-            reject(new Error(`Telegram HTTP ${res.statusCode}: ${body}`));
-          } else {
-            resolve();
+          try {
+            const parsed = JSON.parse(raw || "{}");
+            if (!parsed.ok) {
+              console.warn("[telegram]", method, parsed.description || raw);
+              resolve(null);
+              return;
+            }
+            resolve(parsed);
+          } catch (e) {
+            console.warn("[telegram] parse", method, e?.message || e, raw);
+            resolve(null);
           }
         });
       }
     );
-    req.on("error", reject);
-    req.write(payload);
+    req.on("error", (e) => {
+      console.warn("[telegram] request", method, e?.message || e);
+      resolve(null);
+    });
+    req.write(body);
     req.end();
   });
+}
+
+/**
+ * Отправка карточки лида в группу (HTML + inline-кнопки).
+ * @returns {Promise<number|null>} message_id или null
+ */
+async function sendTelegramMessage(lead) {
+  try {
+    const text = buildLeadTelegramHtml(lead);
+    const reply_markup = buildLeadInlineKeyboard(lead);
+    const payload = {
+      chat_id: TELEGRAM_CHAT_ID,
+      text,
+      parse_mode: "HTML",
+      reply_markup,
+    };
+    const res = await telegramApiCall("sendMessage", payload);
+    const mid = res?.result?.message_id;
+    return mid != null ? Number(mid) : null;
+  } catch (e) {
+    console.warn("[telegram] sendTelegramMessage", e?.message || e);
+    return null;
+  }
+}
+
+function answerCallbackQuery(callbackQueryId, opts) {
+  return telegramApiCall("answerCallbackQuery", {
+    callback_query_id: callbackQueryId,
+    ...(opts || {}),
+  });
+}
+
+async function editTelegramLeadMessage(lead) {
+  try {
+    const mid = lead.telegram_message_id;
+    if (mid == null) return;
+    const payload = {
+      chat_id: TELEGRAM_CHAT_ID,
+      message_id: Number(mid),
+      text: buildLeadTelegramHtml(lead),
+      parse_mode: "HTML",
+      reply_markup: buildLeadInlineKeyboard(lead),
+    };
+    await telegramApiCall("editMessageText", payload);
+  } catch (e) {
+    console.warn("[telegram] editTelegramLeadMessage", e?.message || e);
+  }
+}
+
+function managerDisplayName(from) {
+  if (!from || typeof from !== "object") return "менеджер";
+  if (from.username) return `@${from.username}`;
+  const n = [from.first_name, from.last_name].filter(Boolean).join(" ").trim();
+  return n || "менеджер";
+}
+
+function findLeadByTelegramMessageId(db, messageId) {
+  const mid = Number(messageId);
+  if (!Number.isFinite(mid)) return null;
+  const list = Array.isArray(db.leads) ? db.leads : [];
+  return list.find((l) => Number(l.telegram_message_id) === mid) || null;
 }
 
 const app = express();
@@ -212,14 +352,26 @@ function parseCookies(req) {
 
 function normalizeLead(row) {
   if (!row || typeof row !== "object") return row;
+  const message =
+    row.message != null
+      ? String(row.message)
+      : row.comment != null
+        ? String(row.comment)
+        : "";
   return {
     id: String(row.id || ""),
     name: row.name != null ? String(row.name) : "Без имени",
     phone: row.phone != null ? String(row.phone) : "",
     city: row.city != null ? String(row.city) : "",
-    comment: row.comment != null ? String(row.comment) : "",
+    message,
+    comment: message,
     product: row.product != null ? String(row.product) : "",
     status: row.status || "new",
+    manager: row.manager != null ? String(row.manager) : null,
+    manager_telegram_id:
+      row.manager_telegram_id != null ? Number(row.manager_telegram_id) : null,
+    telegram_message_id:
+      row.telegram_message_id != null ? Number(row.telegram_message_id) : null,
     date: row.date || "",
   };
 }
@@ -282,35 +434,34 @@ app.post("/api/leads", (req, res) => {
       name: nameTrim || "Без имени",
       phone: phoneRaw,
       city: cityTrim,
-      comment: commentTrim.slice(0, MAX_LEAD_COMMENT),
+      message: commentTrim.slice(0, MAX_LEAD_COMMENT),
       product: productTrim,
       status: "new",
+      manager: null,
+      manager_telegram_id: null,
+      telegram_message_id: null,
       date: new Date().toISOString(),
     };
     db.leads.unshift(newLead);
     writeDB(db);
 
-    const tgMessage = `
-🔥 <b>Новая заявка</b>
-
-👤 Имя: ${escapeTelegramHtml(newLead.name)}
-📞 Телефон: ${escapeTelegramHtml(newLead.phone)}
-🏙 Город: ${newLead.city ? escapeTelegramHtml(newLead.city) : "-"}
-📦 Товар: ${newLead.product ? escapeTelegramHtml(newLead.product) : "-"}
-
-💬 ${newLead.comment ? escapeTelegramHtml(newLead.comment) : "-"}
-
-⏰ ${escapeTelegramHtml(
-      new Date().toLocaleString("ru-RU", {
-        dateStyle: "short",
-        timeStyle: "short",
+    sendTelegramMessage(newLead)
+      .then((mid) => {
+        if (mid == null) return;
+        try {
+          const db2 = readDB();
+          const L = db2.leads.find((x) => String(x.id) === String(newLead.id));
+          if (L) {
+            L.telegram_message_id = mid;
+            writeDB(db2);
+          }
+        } catch (e) {
+          console.warn("[telegram] message_id", e?.message || e);
+        }
       })
-    )}
-`.trim();
-
-    sendTelegramMessage(tgMessage).catch((err) => {
-      console.warn("[telegram]", err?.message || err);
-    });
+      .catch((err) => {
+        console.warn("[telegram]", err?.message || err);
+      });
 
     res.json({ success: true });
   } catch (e) {
@@ -339,6 +490,129 @@ app.put("/api/leads/:id", requireAdmin, (req, res) => {
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ success: false });
+  }
+});
+
+app.post("/telegram-webhook", async (req, res) => {
+  try {
+    const cq = req.body?.callback_query;
+    if (!cq) {
+      return res.sendStatus(200);
+    }
+
+    const action = String(cq.data || "").trim();
+    const from = cq.from;
+    const messageId = cq.message?.message_id;
+    const callbackQueryId = cq.id;
+
+    if (!["take", "done", "reject"].includes(action)) {
+      await answerCallbackQuery(callbackQueryId, { text: "Неизвестное действие" });
+      return res.sendStatus(200);
+    }
+
+    const tgUserId = from?.id != null ? Number(from.id) : NaN;
+    const displayName = managerDisplayName(from);
+
+    const db = readDB();
+    const lead = findLeadByTelegramMessageId(db, messageId);
+    if (!lead) {
+      await answerCallbackQuery(callbackQueryId, {
+        text: "Заявка не найдена",
+        show_alert: true,
+      });
+      return res.sendStatus(200);
+    }
+
+    const st = lead.status || "new";
+
+    if (action === "take") {
+      if (st !== "new") {
+        await answerCallbackQuery(callbackQueryId, {
+          text: "Статус уже изменён",
+          show_alert: true,
+        });
+        return res.sendStatus(200);
+      }
+      if (
+        lead.manager_telegram_id != null &&
+        Number.isFinite(tgUserId) &&
+        lead.manager_telegram_id !== tgUserId
+      ) {
+        await answerCallbackQuery(callbackQueryId, {
+          text: "Заявку уже взял другой менеджер",
+          show_alert: true,
+        });
+        return res.sendStatus(200);
+      }
+      lead.status = "in_work";
+      lead.manager = displayName;
+      lead.manager_telegram_id = tgUserId;
+      writeDB(db);
+      await editTelegramLeadMessage(lead);
+      await answerCallbackQuery(callbackQueryId, { text: "Принято" });
+      return res.sendStatus(200);
+    }
+
+    if (action === "done") {
+      if (st === "closed" || st === "rejected") {
+        await answerCallbackQuery(callbackQueryId, {
+          text: "Уже закрыто",
+          show_alert: true,
+        });
+        return res.sendStatus(200);
+      }
+      if (st === "in_work") {
+        if (
+          lead.manager_telegram_id != null &&
+          Number.isFinite(tgUserId) &&
+          lead.manager_telegram_id !== tgUserId
+        ) {
+          await answerCallbackQuery(callbackQueryId, {
+            text: "Может закрыть только ответственный",
+            show_alert: true,
+          });
+          return res.sendStatus(200);
+        }
+      }
+      lead.status = "closed";
+      writeDB(db);
+      await editTelegramLeadMessage(lead);
+      await answerCallbackQuery(callbackQueryId, { text: "Закрыто" });
+      return res.sendStatus(200);
+    }
+
+    if (action === "reject") {
+      if (st === "closed" || st === "rejected") {
+        await answerCallbackQuery(callbackQueryId, {
+          text: "Уже закрыто",
+          show_alert: true,
+        });
+        return res.sendStatus(200);
+      }
+      if (st === "in_work") {
+        if (
+          lead.manager_telegram_id != null &&
+          Number.isFinite(tgUserId) &&
+          lead.manager_telegram_id !== tgUserId
+        ) {
+          await answerCallbackQuery(callbackQueryId, {
+            text: "Может отметить только ответственный",
+            show_alert: true,
+          });
+          return res.sendStatus(200);
+        }
+      }
+      lead.status = "rejected";
+      writeDB(db);
+      await editTelegramLeadMessage(lead);
+      await answerCallbackQuery(callbackQueryId, { text: "Отмечено" });
+      return res.sendStatus(200);
+    }
+
+    return res.sendStatus(200);
+  } catch (e) {
+    console.warn("[telegram-webhook]", e?.message || e);
+    return res.sendStatus(200);
   }
 });
 
