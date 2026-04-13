@@ -54,9 +54,20 @@
     }
   }
 
+  function normalizePhone(input) {
+    let digits = String(input || "").replace(/\D/g, "");
+    if (digits.startsWith("8")) {
+      digits = "7" + digits.slice(1);
+    }
+    if (!digits.startsWith("7")) {
+      digits = "7" + digits;
+    }
+    return "+" + digits;
+  }
+
   function phoneOk(value) {
-    const digits = String(value || "").replace(/[^\d]/g, "");
-    return digits.length >= 10;
+    const digits = normalizePhone(value).replace(/\D/g, "");
+    return digits.length === 11;
   }
 
   function getLeads() {
@@ -484,6 +495,11 @@
     overlay.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
 
+    const phoneInput =
+      form &&
+      (form.querySelector('input[name="phone"]') || form.querySelector('input[type="tel"]'));
+    if (phoneInput) phoneInput.value = normalizePhone(phoneInput.value || "");
+
     const close = $("#leadModalClose", overlay);
     close?.focus();
   }
@@ -513,12 +529,23 @@
 
     const form = $("#leadModalForm", overlay);
     const msg = $("#leadModalMsg", overlay);
+    const modalPhone =
+      form &&
+      (form.querySelector('input[name="phone"]') || form.querySelector('input[type="tel"]'));
+    if (modalPhone) {
+      const syncModalPhone = () => {
+        modalPhone.value = normalizePhone(modalPhone.value || "");
+      };
+      modalPhone.addEventListener("input", syncModalPhone);
+      modalPhone.addEventListener("paste", () => setTimeout(syncModalPhone, 0));
+      syncModalPhone();
+    }
     form?.addEventListener("submit", (e) => {
       e.preventDefault();
 
       const fd = new FormData(form);
       const name = String(fd.get("name") || "").trim();
-      const phone = String(fd.get("phone") || "").trim();
+      const phone = normalizePhone(String(fd.get("phone") || "").trim());
       const company = String(fd.get("company") || "").trim();
       const comment = String(fd.get("comment") || "").trim();
       const context = String(fd.get("context") || "").trim();
@@ -576,11 +603,21 @@
       const leadForm = $("#leadForm");
       const leadMsg = $("#formMsg");
       if (leadForm && leadMsg) {
+        const leadFormPhone =
+          leadForm.querySelector('input[name="phone"]') || leadForm.querySelector('input[type="tel"]');
+        if (leadFormPhone) {
+          const syncLeadFormPhone = () => {
+            leadFormPhone.value = normalizePhone(leadFormPhone.value || "");
+          };
+          leadFormPhone.addEventListener("input", syncLeadFormPhone);
+          leadFormPhone.addEventListener("paste", () => setTimeout(syncLeadFormPhone, 0));
+          syncLeadFormPhone();
+        }
         leadForm.addEventListener("submit", (e) => {
           e.preventDefault();
           const fd = new FormData(leadForm);
           const name = String(fd.get("name") || "").trim();
-          const phone = String(fd.get("phone") || "").trim();
+          const phone = normalizePhone(String(fd.get("phone") || "").trim());
           const company = String(fd.get("company") || "").trim();
           const comment = String(fd.get("comment") || fd.get("message") || "").trim();
 

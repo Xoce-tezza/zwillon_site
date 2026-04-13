@@ -9,7 +9,7 @@ const seo = require("./seo-slugs");
 
 const PORT = process.env.PORT || 3000;
 
-const TELEGRAM_TOKEN = String(
+const TELEGRAM_BOT_TOKEN = String(
   process.env.TELEGRAM_BOT_TOKEN || "PASTE_TOKEN_HERE"
 ).trim();
 const TELEGRAM_CHAT_ID = String(
@@ -23,9 +23,9 @@ const MAX_LEAD_COMMENT = 500;
 
 function telegramReady() {
   return (
-    !!TELEGRAM_TOKEN &&
+    !!TELEGRAM_BOT_TOKEN &&
     !!TELEGRAM_CHAT_ID &&
-    TELEGRAM_TOKEN !== "PASTE_TOKEN_HERE" &&
+    TELEGRAM_BOT_TOKEN !== "PASTE_TOKEN_HERE" &&
     TELEGRAM_CHAT_ID !== "PASTE_CHAT_ID"
   );
 }
@@ -39,6 +39,17 @@ function escapeTelegramHtml(s) {
 
 function phoneDigitsOnly(phone) {
   return String(phone || "").replace(/\D/g, "");
+}
+
+function normalizePhone(phone) {
+  let digits = String(phone || "").replace(/\D/g, "");
+  if (digits.startsWith("8")) {
+    digits = "7" + digits.slice(1);
+  }
+  if (!digits.startsWith("7")) {
+    digits = "7" + digits;
+  }
+  return "+" + digits;
 }
 
 function leadStatusLabelRu(status) {
@@ -85,14 +96,15 @@ function buildLeadTelegramHtml(lead) {
 }
 
 function buildLeadInlineKeyboard(lead) {
-  const digits = phoneDigitsOnly(lead.phone);
+  const phone = String(lead.phone || "").trim();
+  const cleanPhone = phone.replace(/\D/g, "");
   const productName = String(lead.product || "").trim() || "товар";
   const waText = `Здравствуйте! Вы оставляли заявку на ZWILLON (${productName})`;
   const waUrl =
-    digits.length >= 10
-      ? `https://wa.me/${digits}?text=${encodeURIComponent(waText)}`
+    cleanPhone.length >= 11
+      ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waText)}`
       : `https://wa.me/?text=${encodeURIComponent(waText)}`;
-  const telUrl = digits.length >= 10 ? `tel:+${digits.replace(/^\+/, "")}` : "tel:";
+  const telUrl = cleanPhone.length >= 11 ? `tel:${phone}` : "tel:";
 
   return {
     inline_keyboard: [
@@ -117,7 +129,7 @@ function telegramApiCall(method, payload) {
   if (!telegramReady()) return Promise.resolve(null);
 
   const body = JSON.stringify(payload);
-  const urlPath = `/bot${TELEGRAM_TOKEN}/${method}`;
+  const urlPath = `/bot${TELEGRAM_BOT_TOKEN}/${method}`;
 
   return new Promise((resolve, reject) => {
     const req = https.request(
@@ -161,24 +173,34 @@ function telegramApiCall(method, payload) {
 }
 
 /**
- * Отправка карточки лида в группу (HTML + inline-кнопки).
+ * Отправка уведомления о лиде в Telegram (fetch + явные логи).
  * @returns {Promise<number|null>} message_id или null
  */
 async function sendTelegramMessage(lead) {
   try {
-    const text = buildLeadTelegramHtml(lead);
-    const reply_markup = buildLeadInlineKeyboard(lead);
-    const payload = {
-      chat_id: TELEGRAM_CHAT_ID,
-      text,
-      parse_mode: "HTML",
-      reply_markup,
-    };
-    const res = await telegramApiCall("sendMessage", payload);
-    const mid = res?.result?.message_id;
-    return mid != null ? Number(mid) : null;
-  } catch (e) {
-    console.warn("[telegram] sendTelegramMessage", e?.message || e);
+    console.log("SEND TELEGRAM:", {
+      token: process.env.TELEGRAM_BOT_TOKEN,
+      chat: process.env.TELEGRAM_CHAT_ID,
+    });
+    const response = await fetch(
+      `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          chat_id: String(process.env.TELEGRAM_CHAT_ID),
+          text: `🔥 Новая заявка\nИмя: ${lead.name}\nТелефон: ${lead.phone}`,
+        }),
+      }
+    );
+    const data = await response.json();
+    console.log("TELEGRAM RESPONSE:", data);
+    const mid = data?.result?.message_id;
+    return data?.ok && mid != null ? Number(mid) : null;
+  } catch (err) {
+    console.error("TELEGRAM ERROR:", err);
     return null;
   }
 }
@@ -319,10 +341,6 @@ function makeIpLimiter(maxRequests, windowMs) {
 const limitLeadPost = makeIpLimiter(25, 15 * 60 * 1000);
 const limitLoginPost = makeIpLimiter(40, 15 * 60 * 1000);
 
-function phoneDigitsLen(phone) {
-  return String(phone || "").replace(/\D/g, "").length;
-}
-
 function readDB() {
   if (!fs.existsSync(DB_PATH)) {
     const initial = { leads: [] };
@@ -411,7 +429,7 @@ app.get("/api/auth", (req, res) => {
   res.json({ ok: !!(token && sessions.has(token)) });
 });
 
-app.post("/api/leads", (req, res) => {
+app.post("/api/leads", async (req, res) => {
   try {
     const ip = clientIp(req);
     if (!limitLeadPost(ip)) {
@@ -419,7 +437,8 @@ app.post("/api/leads", (req, res) => {
     }
 
     const phoneRaw = String(req.body?.phone || "").trim();
-    if (!phoneRaw || phoneDigitsLen(phoneRaw) < 10) {
+    const phoneNorm = normalizePhone(phoneRaw);
+    if (!phoneNorm || phoneDigitsOnly(phoneNorm).length < 11) {
       return res.status(400).json({ success: false, error: "invalid_phone" });
     }
 
@@ -432,7 +451,7 @@ app.post("/api/leads", (req, res) => {
     const newLead = {
       id: Date.now().toString(),
       name: nameTrim || "Без имени",
-      phone: phoneRaw,
+      phone: phoneNorm,
       city: cityTrim,
       message: commentTrim.slice(0, MAX_LEAD_COMMENT),
       product: productTrim,
@@ -445,23 +464,19 @@ app.post("/api/leads", (req, res) => {
     db.leads.unshift(newLead);
     writeDB(db);
 
-    sendTelegramMessage(newLead)
-      .then((mid) => {
-        if (mid == null) return;
-        try {
-          const db2 = readDB();
-          const L = db2.leads.find((x) => String(x.id) === String(newLead.id));
-          if (L) {
-            L.telegram_message_id = mid;
-            writeDB(db2);
-          }
-        } catch (e) {
-          console.warn("[telegram] message_id", e?.message || e);
+    const mid = await sendTelegramMessage(newLead);
+    if (mid != null) {
+      try {
+        const db2 = readDB();
+        const L = db2.leads.find((x) => String(x.id) === String(newLead.id));
+        if (L) {
+          L.telegram_message_id = mid;
+          writeDB(db2);
         }
-      })
-      .catch((err) => {
-        console.warn("[telegram]", err?.message || err);
-      });
+      } catch (e) {
+        console.error("[telegram] message_id persist failed:", e?.message || e);
+      }
+    }
 
     res.json({ success: true });
   } catch (e) {

@@ -4,6 +4,32 @@
 (function () {
   var leadProductLabel = "Запрос прайса";
 
+  function normalizePhone(input) {
+    if (window.ZWILLON && typeof window.ZWILLON.normalizePhone === "function") {
+      return window.ZWILLON.normalizePhone(input);
+    }
+    var digits = String(input || "").replace(/\D/g, "");
+    if (digits.startsWith("8")) {
+      digits = "7" + digits.slice(1);
+    }
+    if (!digits.startsWith("7")) {
+      digits = "7" + digits;
+    }
+    return "+" + digits;
+  }
+
+  function bindLeadPhoneField(el) {
+    if (!el) return;
+    function sync() {
+      el.value = normalizePhone(el.value || "");
+    }
+    el.addEventListener("input", sync);
+    el.addEventListener("paste", function () {
+      setTimeout(sync, 0);
+    });
+    sync();
+  }
+
   function injectToastStyles() {
     if (document.getElementById("lead-toast-styles")) return;
     var s = document.createElement("style");
@@ -85,6 +111,8 @@
     document.body.style.overflow = "hidden";
     var n = document.getElementById("leadModalProductName");
     if (n) n.textContent = label;
+    var phoneOpen = document.getElementById("leadFieldPhone");
+    if (phoneOpen) phoneOpen.value = normalizePhone(phoneOpen.value || "");
   };
 
   window.closeLeadModal = function closeLeadModal() {
@@ -111,7 +139,7 @@
     var commentEl = document.getElementById("leadFieldComment");
 
     var name = String(nameEl?.value || "").trim();
-    var phone = String(phoneEl?.value || "").trim();
+    var phone = normalizePhone(phoneEl?.value || "");
     var city = String(cityEl?.value || "").trim();
     var comment = String(commentEl?.value || "").trim();
     var product = leadProductLabel;
@@ -126,8 +154,8 @@
       return;
     }
     var phoneDigits = phone.replace(/\D/g, "");
-    if (phoneDigits.length < 10) {
-      showModalError("Телефон: не менее 10 цифр.");
+    if (phoneDigits.length < 11) {
+      showModalError("Телефон: введите 10 цифр после +7.");
       return;
     }
 
@@ -151,14 +179,14 @@
         return;
       }
       if (res.status === 400 && body.error === "invalid_phone") {
-        showModalError("Телефон: не менее 10 цифр.");
+        showModalError("Телефон: введите 10 цифр после +7.");
         return;
       }
       if (!res.ok) throw new Error("bad");
       if (body.success === false) throw new Error("rej");
       bumpLocalLeadStats();
       if (nameEl) nameEl.value = "";
-      if (phoneEl) phoneEl.value = "";
+      if (phoneEl) phoneEl.value = normalizePhone("");
       if (cityEl) cityEl.value = "";
       if (commentEl) commentEl.value = "";
       closeLeadModal();
@@ -170,6 +198,7 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     injectToastStyles();
+    bindLeadPhoneField(document.getElementById("leadFieldPhone"));
     var modal = document.getElementById("leadModal");
     if (modal) {
       modal.addEventListener("click", function (e) {

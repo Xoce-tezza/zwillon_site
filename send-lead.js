@@ -2,6 +2,17 @@
  * Отправка заявки на CRM (POST /api/leads). Подключать после открытия <body>, до модулей.
  */
 (function () {
+  function normalizePhone(input) {
+    var digits = String(input || "").replace(/\D/g, "");
+    if (digits.startsWith("8")) {
+      digits = "7" + digits.slice(1);
+    }
+    if (!digits.startsWith("7")) {
+      digits = "7" + digits;
+    }
+    return "+" + digits;
+  }
+
   function bumpLocalLeadStats() {
     try {
       var STORAGE_KEY = "zwillon_stats";
@@ -19,9 +30,9 @@
   window.sendLead = async function sendLead() {
     var phone = prompt("Введите номер телефона:");
     if (phone === null) return;
-    var trimmed = String(phone).trim();
-    if (!trimmed) {
-      alert("Укажите номер телефона.");
+    var trimmed = normalizePhone(String(phone).trim());
+    if (trimmed.replace(/\D/g, "").length < 11) {
+      alert("Укажите полный номер (10 цифр после +7).");
       return;
     }
     try {

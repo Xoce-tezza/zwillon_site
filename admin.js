@@ -6,17 +6,10 @@ function escapeHtml(str) {
   });
 }
 
-function onlyDigits(s) {
-  return String(s || "").replace(/\D/g, "");
-}
-
 function waLinkForPhone(phone) {
-  var d = onlyDigits(phone);
-  if (!d) return "https://wa.me/" + WA_MANAGER;
-  if (d.length === 10) d = "7" + d;
-  if (d.length === 11 && d[0] === "8") d = "7" + d.slice(1);
-  if (d[0] !== "7" && d.length >= 10) d = "7" + d.replace(/^\+?/, "");
-  return "https://wa.me/" + d;
+  var cleanPhone = String(phone || "").replace(/\D/g, "");
+  if (!cleanPhone || cleanPhone.length < 11) return "https://wa.me/" + WA_MANAGER;
+  return "https://wa.me/" + cleanPhone;
 }
 
 function statusLabel(s) {
@@ -112,7 +105,7 @@ function renderLeadsList() {
       var comment = escapeHtml(l.comment || "—");
       var date = escapeHtml(l.date || "");
       var st = l.status || "new";
-      var telHref = phone && phone !== "—" ? "tel:" + onlyDigits(l.phone) : "#";
+      var telHref = phone && phone !== "—" ? "tel:" + String(l.phone || "") : "#";
       var waHref = waLinkForPhone(l.phone);
 
       return (

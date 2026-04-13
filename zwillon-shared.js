@@ -695,9 +695,20 @@
     return CATEGORY_LABELS[key] || key || "Каталог";
   }
 
+  function normalizePhone(input) {
+    let digits = String(input || "").replace(/\D/g, "");
+    if (digits.startsWith("8")) {
+      digits = "7" + digits.slice(1);
+    }
+    if (!digits.startsWith("7")) {
+      digits = "7" + digits;
+    }
+    return "+" + digits;
+  }
+
   function phoneOk(v) {
-    const digits = String(v || "").replace(/[^\d]/g, "");
-    return digits.length >= 10;
+    const digits = normalizePhone(v).replace(/\D/g, "");
+    return digits.length === 11;
   }
 
   const WA_ME_NUMBER = "77782388238";
@@ -771,8 +782,20 @@
 
     if (!overlay || !form) return { open: () => {}, close: () => {} };
 
+    const phoneInput =
+      form.querySelector('input[name="phone"]') || form.querySelector('input[type="tel"]');
+    if (phoneInput) {
+      const syncPhone = () => {
+        phoneInput.value = normalizePhone(phoneInput.value || "");
+      };
+      phoneInput.addEventListener("input", syncPhone);
+      phoneInput.addEventListener("paste", () => setTimeout(syncPhone, 0));
+      syncPhone();
+    }
+
     function open(ctx) {
       if (contextInput && ctx != null) contextInput.value = String(ctx);
+      if (phoneInput) phoneInput.value = normalizePhone(phoneInput.value || "");
       overlay.classList.remove("hidden");
       overlay.setAttribute("aria-hidden", "false");
       document.body.style.overflow = "hidden";
@@ -799,7 +822,7 @@
 
       const fd = new FormData(form);
       const name = String(fd.get("name") || "").trim();
-      const phone = String(fd.get("phone") || "").trim();
+      const phone = normalizePhone(String(fd.get("phone") || "").trim());
       const company = String(fd.get("company") || "").trim();
       const comment = String(fd.get("comment") || "").trim();
       const context = String(fd.get("context") || "").trim();
@@ -878,6 +901,7 @@
     categoryLabel,
     bindMobileMenu,
     bindLeadModal,
+    normalizePhone,
     phoneOk,
     getWhatsAppLinkGeneral,
     getWhatsAppLinkProduct,
