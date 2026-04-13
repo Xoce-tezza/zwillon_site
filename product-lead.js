@@ -168,6 +168,7 @@
           phone: phone,
           city: city,
           comment: comment,
+          message: comment,
           product: product,
         }),
       });

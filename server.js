@@ -61,17 +61,22 @@ function leadStatusLabelRu(status) {
 }
 
 function buildLeadTelegramHtml(lead) {
-  const productName = String(lead.product || "").trim() || "товар";
+  const productName = String(lead.product || "").trim() || "-";
   const msgText =
     lead.message != null
       ? String(lead.message)
       : lead.comment != null
         ? String(lead.comment)
         : "";
-  const managerLine = lead.manager
-    ? `👨‍💼 В работе: ${escapeTelegramHtml(lead.manager)}`
-    : "👨‍💼 В работе: -";
-  const statusLine = `📊 Статус: ${escapeTelegramHtml(leadStatusLabelRu(lead.status))}`;
+  const cityDisp =
+    lead.city != null && String(lead.city).trim()
+      ? escapeTelegramHtml(String(lead.city).trim())
+      : "-";
+  const managerDisp = lead.manager
+    ? escapeTelegramHtml(String(lead.manager))
+    : "-";
+  const statusDisp = escapeTelegramHtml(leadStatusLabelRu(lead.status));
+  const commentDisp = msgText ? escapeTelegramHtml(msgText) : "-";
   const when = lead.date
     ? new Date(lead.date).toLocaleString("ru-RU", {
         dateStyle: "short",
@@ -84,13 +89,13 @@ function buildLeadTelegramHtml(lead) {
 
   return (
     `🔥 <b>Новая заявка</b>\n\n` +
-    `👤 Имя: ${escapeTelegramHtml(lead.name)}\n` +
-    `📞 Телефон: ${escapeTelegramHtml(lead.phone)}\n` +
-    `🏙 Город: ${lead.city ? escapeTelegramHtml(lead.city) : "-"}\n` +
-    `📦 Товар: ${escapeTelegramHtml(productName)}\n\n` +
-    `💬 ${msgText ? escapeTelegramHtml(msgText) : "-"}\n\n` +
-    `${managerLine}\n` +
-    `${statusLine}\n\n` +
+    `👤 <b>Имя:</b> ${escapeTelegramHtml(lead.name)}\n` +
+    `📞 <b>Телефон:</b> ${escapeTelegramHtml(lead.phone)}\n` +
+    `🏙 <b>Город:</b> ${cityDisp}\n` +
+    `📦 <b>Товар:</b> ${escapeTelegramHtml(productName)}\n` +
+    `💬 <b>Комментарий:</b> ${commentDisp}\n\n` +
+    `👨‍💼 <b>В работе:</b> ${managerDisp}\n` +
+    `📊 <b>Статус:</b> ${statusDisp}\n\n` +
     `⏰ ${escapeTelegramHtml(when)}`
   );
 }
@@ -98,13 +103,13 @@ function buildLeadTelegramHtml(lead) {
 function buildLeadInlineKeyboard(lead) {
   const phone = String(lead.phone || "").trim();
   const cleanPhone = phone.replace(/\D/g, "");
-  const productName = String(lead.product || "").trim() || "товар";
-  const waText = `Здравствуйте! Вы оставляли заявку на ZWILLON (${productName})`;
+  const waText = "Здравствуйте, по заявке с сайта ZWILLON";
   const waUrl =
     cleanPhone.length >= 11
       ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waText)}`
       : `https://wa.me/?text=${encodeURIComponent(waText)}`;
   const telUrl = cleanPhone.length >= 11 ? `tel:${phone}` : "tel:";
+  const id = String(lead.id || "");
 
   return {
     inline_keyboard: [
@@ -113,9 +118,9 @@ function buildLeadInlineKeyboard(lead) {
         { text: "📞 Позвонить", url: telUrl },
       ],
       [
-        { text: "✅ Взял в работу", callback_data: "take" },
-        { text: "💰 Закрыто", callback_data: "done" },
-        { text: "❌ Не актуально", callback_data: "reject" },
+        { text: "✅ В работу", callback_data: `take_${id}` },
+        { text: "💰 Завершено", callback_data: `done_${id}` },
+        { text: "❌ Отказ", callback_data: `reject_${id}` },
       ],
     ],
   };
@@ -173,15 +178,13 @@ function telegramApiCall(method, payload) {
 }
 
 /**
- * Отправка уведомления о лиде в Telegram (fetch + явные логи).
+ * Отправка карточки лида в Telegram (HTML + inline-кнопки, fetch).
  * @returns {Promise<number|null>} message_id или null
  */
 async function sendTelegramMessage(lead) {
   try {
-    console.log("SEND TELEGRAM:", {
-      token: process.env.TELEGRAM_BOT_TOKEN,
-      chat: process.env.TELEGRAM_CHAT_ID,
-    });
+    const text = buildLeadTelegramHtml(lead);
+    const keyboard = buildLeadInlineKeyboard(lead);
     const response = await fetch(
       `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`,
       {
@@ -191,12 +194,14 @@ async function sendTelegramMessage(lead) {
         },
         body: JSON.stringify({
           chat_id: String(process.env.TELEGRAM_CHAT_ID),
-          text: `🔥 Новая заявка\nИмя: ${lead.name}\nТелефон: ${lead.phone}`,
+          text,
+          parse_mode: "HTML",
+          reply_markup: keyboard,
         }),
       }
     );
     const data = await response.json();
-    console.log("TELEGRAM RESPONSE:", data);
+    console.log("TELEGRAM:", data);
     const mid = data?.result?.message_id;
     return data?.ok && mid != null ? Number(mid) : null;
   } catch (err) {
@@ -444,7 +449,10 @@ app.post("/api/leads", async (req, res) => {
 
     const nameTrim = String(req.body?.name || "").trim();
     const cityTrim = String(req.body?.city || "").trim();
-    const commentTrim = String(req.body?.comment || "").trim();
+    const messageTrim = String(
+      req.body?.message != null ? req.body.message : req.body?.comment != null ? req.body.comment : ""
+    ).trim();
+
     const productTrim = String(req.body?.product || "").trim();
 
     const db = readDB();
@@ -453,7 +461,7 @@ app.post("/api/leads", async (req, res) => {
       name: nameTrim || "Без имени",
       phone: phoneNorm,
       city: cityTrim,
-      message: commentTrim.slice(0, MAX_LEAD_COMMENT),
+      message: messageTrim.slice(0, MAX_LEAD_COMMENT),
       product: productTrim,
       status: "new",
       manager: null,
@@ -515,12 +523,18 @@ app.post("/telegram-webhook", async (req, res) => {
       return res.sendStatus(200);
     }
 
-    const action = String(cq.data || "").trim();
+    const rawData = String(cq.data || "").trim();
     const from = cq.from;
     const messageId = cq.message?.message_id;
     const callbackQueryId = cq.id;
 
-    if (!["take", "done", "reject"].includes(action)) {
+    const m = rawData.match(/^(take|done|reject)_(.+)$/);
+    let action;
+    if (m) {
+      action = m[1];
+    } else if (["take", "done", "reject"].includes(rawData)) {
+      action = rawData;
+    } else {
       await answerCallbackQuery(callbackQueryId, { text: "Неизвестное действие" });
       return res.sendStatus(200);
     }
@@ -531,6 +545,14 @@ app.post("/telegram-webhook", async (req, res) => {
     const db = readDB();
     const lead = findLeadByTelegramMessageId(db, messageId);
     if (!lead) {
+      await answerCallbackQuery(callbackQueryId, {
+        text: "Заявка не найдена",
+        show_alert: true,
+      });
+      return res.sendStatus(200);
+    }
+
+    if (m && String(lead.id) !== String(m[2])) {
       await answerCallbackQuery(callbackQueryId, {
         text: "Заявка не найдена",
         show_alert: true,
