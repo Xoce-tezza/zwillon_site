@@ -4,31 +4,14 @@ const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-const https = require("https");
 const seo = require("./seo-slugs");
 
 const PORT = process.env.PORT || 3000;
-
-const TELEGRAM_BOT_TOKEN = String(
-  process.env.TELEGRAM_BOT_TOKEN || "PASTE_TOKEN_HERE"
-).trim();
-const TELEGRAM_CHAT_ID = String(
-  process.env.TELEGRAM_CHAT_ID || "PASTE_CHAT_ID"
-).trim();
 
 const ADMIN_LOGIN = "zwillon_ata";
 const ADMIN_PASSWORD = "milkaKAMILKA_2026_secure";
 
 const MAX_LEAD_COMMENT = 500;
-
-function telegramReady() {
-  return (
-    !!TELEGRAM_BOT_TOKEN &&
-    !!TELEGRAM_CHAT_ID &&
-    TELEGRAM_BOT_TOKEN !== "PASTE_TOKEN_HERE" &&
-    TELEGRAM_CHAT_ID !== "PASTE_CHAT_ID"
-  );
-}
 
 function escapeTelegramHtml(s) {
   return String(s || "")
@@ -52,14 +35,6 @@ function normalizePhone(phone) {
   return "+" + digits;
 }
 
-function leadStatusLabelRu(status) {
-  const s = String(status || "new");
-  if (s === "in_work") return "В работе";
-  if (s === "closed" || s === "done") return "Закрыто";
-  if (s === "rejected") return "Не актуально";
-  return "Новая";
-}
-
 function buildLeadTelegramHtml(lead) {
   const productName = String(lead.product || "").trim() || "-";
   const msgText =
@@ -72,10 +47,8 @@ function buildLeadTelegramHtml(lead) {
     lead.city != null && String(lead.city).trim()
       ? escapeTelegramHtml(String(lead.city).trim())
       : "-";
-  const managerDisp = lead.manager
-    ? escapeTelegramHtml(String(lead.manager))
-    : "-";
-  const statusDisp = escapeTelegramHtml(leadStatusLabelRu(lead.status));
+  const managerDisp = escapeTelegramHtml(String(lead.manager || "-"));
+  const statusDisp = escapeTelegramHtml(String(lead.status || "new"));
   const commentDisp = msgText ? escapeTelegramHtml(msgText) : "-";
   const when = lead.date
     ? new Date(lead.date).toLocaleString("ru-RU", {
@@ -125,57 +98,6 @@ function buildLeadInlineKeyboard(lead) {
 }
 
 /**
- * Универсальный вызов Telegram Bot API (JSON).
- * @returns {Promise<object|null>}
- */
-function telegramApiCall(method, payload) {
-  if (!telegramReady()) return Promise.resolve(null);
-
-  const body = JSON.stringify(payload);
-  const urlPath = `/bot${TELEGRAM_BOT_TOKEN}/${method}`;
-
-  return new Promise((resolve, reject) => {
-    const req = https.request(
-      {
-        hostname: "api.telegram.org",
-        path: urlPath,
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(body, "utf8"),
-        },
-      },
-      (res) => {
-        let raw = "";
-        res.on("data", (ch) => {
-          raw += ch;
-        });
-        res.on("end", () => {
-          try {
-            const parsed = JSON.parse(raw || "{}");
-            if (!parsed.ok) {
-              console.warn("[telegram]", method, parsed.description || raw);
-              resolve(null);
-              return;
-            }
-            resolve(parsed);
-          } catch (e) {
-            console.warn("[telegram] parse", method, e?.message || e, raw);
-            resolve(null);
-          }
-        });
-      }
-    );
-    req.on("error", (e) => {
-      console.warn("[telegram] request", method, e?.message || e);
-      resolve(null);
-    });
-    req.write(body);
-    req.end();
-  });
-}
-
-/**
  * Отправка карточки лида в Telegram (HTML + inline-кнопки, fetch).
  * @returns {Promise<number|null>} message_id или null
  */
@@ -208,27 +130,59 @@ async function sendTelegramMessage(lead) {
   }
 }
 
-function answerCallbackQuery(callbackQueryId, opts) {
-  return telegramApiCall("answerCallbackQuery", {
-    callback_query_id: callbackQueryId,
-    ...(opts || {}),
-  });
+async function answerCallback(callbackQueryId, text, extra = {}) {
+  try {
+    const response = await fetch(
+      `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/answerCallbackQuery`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          callback_query_id: callbackQueryId,
+          text: text != null ? String(text) : "",
+          ...extra,
+        }),
+      }
+    );
+    const data = await response.json();
+    if (!data.ok) console.error("TELEGRAM answerCallback:", data);
+  } catch (e) {
+    console.error("TELEGRAM answerCallback ERROR:", e);
+  }
+}
+
+async function editTelegramMessage(messageId, text, keyboard) {
+  try {
+    const response = await fetch(
+      `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/editMessageText`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: String(process.env.TELEGRAM_CHAT_ID),
+          message_id: messageId,
+          text,
+          parse_mode: "HTML",
+          reply_markup: keyboard,
+        }),
+      }
+    );
+    const data = await response.json();
+    if (!data.ok) console.error("TELEGRAM editMessageText:", data);
+  } catch (e) {
+    console.error("TELEGRAM editMessageText ERROR:", e);
+  }
 }
 
 async function editTelegramLeadMessage(lead) {
   try {
     const mid = lead.telegram_message_id;
     if (mid == null) return;
-    const payload = {
-      chat_id: TELEGRAM_CHAT_ID,
-      message_id: Number(mid),
-      text: buildLeadTelegramHtml(lead),
-      parse_mode: "HTML",
-      reply_markup: buildLeadInlineKeyboard(lead),
-    };
-    await telegramApiCall("editMessageText", payload);
+    const text = buildLeadTelegramHtml(lead);
+    const keyboard = buildLeadInlineKeyboard(lead);
+    await editTelegramMessage(Number(mid), text, keyboard);
   } catch (e) {
-    console.warn("[telegram] editTelegramLeadMessage", e?.message || e);
+    console.error("[telegram] editTelegramLeadMessage", e?.message || e);
   }
 }
 
@@ -237,13 +191,6 @@ function managerDisplayName(from) {
   if (from.username) return `@${from.username}`;
   const n = [from.first_name, from.last_name].filter(Boolean).join(" ").trim();
   return n || "менеджер";
-}
-
-function findLeadByTelegramMessageId(db, messageId) {
-  const mid = Number(messageId);
-  if (!Number.isFinite(mid)) return null;
-  const list = Array.isArray(db.leads) ? db.leads : [];
-  return list.find((l) => Number(l.telegram_message_id) === mid) || null;
 }
 
 const app = express();
@@ -516,138 +463,128 @@ app.put("/api/leads/:id", requireAdmin, (req, res) => {
 
 app.post("/telegram-webhook", async (req, res) => {
   try {
-    const cq = req.body?.callback_query;
-    if (!cq) {
-      return res.sendStatus(200);
-    }
+    const update = req.body || {};
 
-    const rawData = String(cq.data || "").trim();
-    const from = cq.from;
-    const messageId = cq.message?.message_id;
-    const callbackQueryId = cq.id;
+    if (update.callback_query) {
+      const query = update.callback_query;
+      const data = String(query.data || "").trim();
+      const user = query.from || {};
+      const message = query.message;
 
-    const m = rawData.match(/^(take|done|reject)_(.+)$/);
-    let action;
-    if (m) {
-      action = m[1];
-    } else if (["take", "done", "reject"].includes(rawData)) {
-      action = rawData;
-    } else {
-      await answerCallbackQuery(callbackQueryId, { text: "Неизвестное действие" });
-      return res.sendStatus(200);
-    }
-
-    const tgUserId = from?.id != null ? Number(from.id) : NaN;
-    const displayName = managerDisplayName(from);
-
-    const db = readDB();
-    const lead = findLeadByTelegramMessageId(db, messageId);
-    if (!lead) {
-      await answerCallbackQuery(callbackQueryId, {
-        text: "Заявка не найдена",
-        show_alert: true,
-      });
-      return res.sendStatus(200);
-    }
-
-    if (m && String(lead.id) !== String(m[2])) {
-      await answerCallbackQuery(callbackQueryId, {
-        text: "Заявка не найдена",
-        show_alert: true,
-      });
-      return res.sendStatus(200);
-    }
-
-    const st = lead.status || "new";
-
-    if (action === "take") {
-      if (st !== "new") {
-        await answerCallbackQuery(callbackQueryId, {
-          text: "Статус уже изменён",
-          show_alert: true,
-        });
+      if (!message?.message_id) {
         return res.sendStatus(200);
       }
+
+      const messageId = message.message_id;
+      const userId = user.id != null ? Number(user.id) : NaN;
+      const displayName = managerDisplayName(user);
+
+      const m = data.match(/^(take|done|reject)_(.+)$/);
+      let action;
+      let leadId;
+
+      const db = readDB();
+      const list = Array.isArray(db.leads) ? db.leads : [];
+
+      if (m) {
+        action = m[1];
+        leadId = m[2];
+      } else if (["take", "done", "reject"].includes(data)) {
+        action = data;
+        const byMsg = list.find((l) => Number(l.telegram_message_id) === Number(messageId));
+        if (!byMsg) {
+          await answerCallback(query.id, "Заявка не найдена", { show_alert: true });
+          return res.sendStatus(200);
+        }
+        leadId = String(byMsg.id);
+      } else {
+        await answerCallback(query.id, "Неизвестное действие");
+        return res.sendStatus(200);
+      }
+
+      const lead = list.find((l) => String(l.id) === String(leadId));
+      if (!lead) {
+        await answerCallback(query.id, "Заявка не найдена", { show_alert: true });
+        return res.sendStatus(200);
+      }
+
       if (
-        lead.manager_telegram_id != null &&
-        Number.isFinite(tgUserId) &&
-        lead.manager_telegram_id !== tgUserId
+        lead.telegram_message_id != null &&
+        Number(lead.telegram_message_id) !== Number(messageId)
       ) {
-        await answerCallbackQuery(callbackQueryId, {
-          text: "Заявку уже взял другой менеджер",
-          show_alert: true,
-        });
+        await answerCallback(query.id, "Сообщение не совпадает с заявкой", { show_alert: true });
         return res.sendStatus(200);
       }
-      lead.status = "in_work";
-      lead.manager = displayName;
-      lead.manager_telegram_id = tgUserId;
-      writeDB(db);
-      await editTelegramLeadMessage(lead);
-      await answerCallbackQuery(callbackQueryId, { text: "Принято" });
-      return res.sendStatus(200);
-    }
 
-    if (action === "done") {
-      if (st === "closed" || st === "rejected") {
-        await answerCallbackQuery(callbackQueryId, {
-          text: "Уже закрыто",
-          show_alert: true,
-        });
-        return res.sendStatus(200);
-      }
-      if (st === "in_work") {
-        if (
-          lead.manager_telegram_id != null &&
-          Number.isFinite(tgUserId) &&
-          lead.manager_telegram_id !== tgUserId
-        ) {
-          await answerCallbackQuery(callbackQueryId, {
-            text: "Может закрыть только ответственный",
-            show_alert: true,
-          });
+      const st = lead.status || "new";
+
+      if (action === "take") {
+        if (st !== "new") {
+          await answerCallback(query.id, "Статус уже изменён", { show_alert: true });
           return res.sendStatus(200);
         }
-      }
-      lead.status = "closed";
-      writeDB(db);
-      await editTelegramLeadMessage(lead);
-      await answerCallbackQuery(callbackQueryId, { text: "Закрыто" });
-      return res.sendStatus(200);
-    }
-
-    if (action === "reject") {
-      if (st === "closed" || st === "rejected") {
-        await answerCallbackQuery(callbackQueryId, {
-          text: "Уже закрыто",
-          show_alert: true,
-        });
-        return res.sendStatus(200);
-      }
-      if (st === "in_work") {
         if (
           lead.manager_telegram_id != null &&
-          Number.isFinite(tgUserId) &&
-          lead.manager_telegram_id !== tgUserId
+          Number.isFinite(userId) &&
+          Number(lead.manager_telegram_id) !== userId
         ) {
-          await answerCallbackQuery(callbackQueryId, {
-            text: "Может отметить только ответственный",
-            show_alert: true,
-          });
+          await answerCallback(query.id, "Уже взято другим", { show_alert: true });
           return res.sendStatus(200);
         }
+        lead.status = "in_work";
+        lead.manager = displayName;
+        lead.manager_telegram_id = userId;
+      } else if (action === "done") {
+        if (st === "closed" || st === "rejected") {
+          await answerCallback(query.id, "Уже закрыто", { show_alert: true });
+          return res.sendStatus(200);
+        }
+        if (st === "in_work") {
+          if (
+            lead.manager_telegram_id != null &&
+            Number.isFinite(userId) &&
+            Number(lead.manager_telegram_id) !== userId
+          ) {
+            await answerCallback(query.id, "Может закрыть только ответственный", {
+              show_alert: true,
+            });
+            return res.sendStatus(200);
+          }
+        }
+        lead.status = "closed";
+      } else if (action === "reject") {
+        if (st === "closed" || st === "rejected") {
+          await answerCallback(query.id, "Уже закрыто", { show_alert: true });
+          return res.sendStatus(200);
+        }
+        if (st === "in_work") {
+          if (
+            lead.manager_telegram_id != null &&
+            Number.isFinite(userId) &&
+            Number(lead.manager_telegram_id) !== userId
+          ) {
+            await answerCallback(query.id, "Может отметить только ответственный", {
+              show_alert: true,
+            });
+            return res.sendStatus(200);
+          }
+        }
+        lead.status = "rejected";
       }
-      lead.status = "rejected";
+
       writeDB(db);
-      await editTelegramLeadMessage(lead);
-      await answerCallbackQuery(callbackQueryId, { text: "Отмечено" });
+
+      const text = buildLeadTelegramHtml(lead);
+      const keyboard = buildLeadInlineKeyboard(lead);
+      await editTelegramMessage(messageId, text, keyboard);
+      await answerCallback(query.id, "Обновлено");
       return res.sendStatus(200);
     }
 
     return res.sendStatus(200);
-  } catch (e) {
-    console.warn("[telegram-webhook]", e?.message || e);
-    return res.sendStatus(200);
+  } catch (err) {
+    console.error("[telegram-webhook]", err);
+    return res.sendStatus(500);
   }
 });
 
