@@ -87,10 +87,13 @@ function buildLeadTelegramHtml(lead) {
         timeStyle: "short",
       });
 
+  const ph = String(lead.phone || "").trim();
+  const phEsc = escapeTelegramHtml(ph);
+
   return (
     `🔥 <b>Новая заявка</b>\n\n` +
     `👤 <b>Имя:</b> ${escapeTelegramHtml(lead.name)}\n` +
-    `📞 <b>Телефон:</b> ${escapeTelegramHtml(lead.phone)}\n` +
+    `📞 <b>Телефон:</b> <a href="tel:${phEsc}">${phEsc}</a>\n` +
     `🏙 <b>Город:</b> ${cityDisp}\n` +
     `📦 <b>Товар:</b> ${escapeTelegramHtml(productName)}\n` +
     `💬 <b>Комментарий:</b> ${commentDisp}\n\n` +
@@ -103,20 +106,15 @@ function buildLeadTelegramHtml(lead) {
 function buildLeadInlineKeyboard(lead) {
   const phone = String(lead.phone || "").trim();
   const cleanPhone = phone.replace(/\D/g, "");
-  const waText = "Здравствуйте, по заявке с сайта ZWILLON";
   const waUrl =
     cleanPhone.length >= 11
-      ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waText)}`
-      : `https://wa.me/?text=${encodeURIComponent(waText)}`;
-  const telUrl = cleanPhone.length >= 11 ? `tel:${phone}` : "tel:";
+      ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent("Здравствуйте, по заявке с сайта ZWILLON")}`
+      : `https://wa.me/?text=${encodeURIComponent("Здравствуйте, по заявке с сайта ZWILLON")}`;
   const id = String(lead.id || "");
 
   return {
     inline_keyboard: [
-      [
-        { text: "🟢 WhatsApp", url: waUrl },
-        { text: "📞 Позвонить", url: telUrl },
-      ],
+      [{ text: "🟢 WhatsApp", url: waUrl }],
       [
         { text: "✅ В работу", callback_data: `take_${id}` },
         { text: "💰 Завершено", callback_data: `done_${id}` },
