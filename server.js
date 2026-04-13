@@ -617,29 +617,7 @@ app.get("/catalog", (req, res) => {
   res.sendFile(path.join(__dirname, "catalog.html"));
 });
 
-app.get("/sitemap.xml", (req, res) => {
-  const base = siteBaseUrl(req);
-  const products = seo.loadProducts();
-  const { idToSlug } = seo.buildProductSlugMaps(products);
-  const rows = [
-    { loc: `${base}/`, p: "1.0" },
-    { loc: `${base}/index.html`, p: "1.0" },
-    { loc: `${base}/catalog.html`, p: "0.9" },
-  ];
-  for (const slug of idToSlug.values()) {
-    rows.push({ loc: `${base}/product/${slug}.html`, p: "0.8" });
-  }
-  const body = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${rows
-  .map(
-    (r) =>
-      `  <url><loc>${String(r.loc).replace(/&(?!amp;|lt;|gt;|apos;|quot;)/g, "&amp;")}</loc><priority>${r.p}</priority></url>`
-  )
-  .join("\n")}
-</urlset>`;
-  res.type("application/xml").send(body);
-});
+/** Статический sitemap.xml и robots.txt отдаются через express.static(__dirname). */
 
 app.get("/product/:slug.html", (req, res) => {
   const slug = String(req.params.slug || "")

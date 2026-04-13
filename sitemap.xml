@@ -1,12 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- При работе через Node (server.js) используйте динамический sitemap: GET /sitemap.xml -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://zwillon.asia/</loc>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>https://zwillon.asia/catalog.html</loc>
-    <priority>0.9</priority>
-  </url>
+<url>
+  <loc>https://zwillon.asia/</loc>
+  <priority>1.0</priority>
+</url>
+<url>
+  <loc>https://zwillon.asia/catalog.html</loc>
+  <priority>0.9</priority>
+</url>
+<url>
+  <loc>https://zwillon.asia/zwillon-optom.html</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://zwillon.asia/fissman-optom.html</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://zwillon.asia/posuda-optom-almaty.html</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://zwillon.asia/posuda-dlya-kafe.html</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://zwillon.asia/kastruli-optom.html</loc>
+  <priority>0.8</priority>
+</url>
+<url>
+  <loc>https://zwillon.asia/skovorody-optom.html</loc>
+  <priority>0.8</priority>
+</url>
 </urlset>
