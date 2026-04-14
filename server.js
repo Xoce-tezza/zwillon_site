@@ -246,9 +246,10 @@ app.use(
   })
 );
 
-app.use(express.json({ limit: "256kb" }));
-
+/** Публичные HTML, sitemap.xml, robots.txt — до JSON-парсера и любых app.get/post. */
 app.use(express.static(__dirname));
+
+app.use(express.json({ limit: "256kb" }));
 
 app.get("/health", (req, res) => {
   res.status(200).send("OK");
