@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="/favicon.ico" type="image/x-icon">
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-  <title>CRM — заявки ZWILLON</title>
+  <title>CRM вЂ” Р·Р°СЏРІРєРё ZWILLON</title>
   <style>
     :root { --bg:#0b0b0b; --card:#141414; --border:rgba(255,255,255,.1); --text:#fff; --muted:#aaa; --accent:#ffc107; --wa:#25d366; }
     * { box-sizing:border-box; }
@@ -46,27 +46,27 @@
 <body>
   <div class="wrap">
     <div id="loginView" class="login-card">
-      <h2>Вход в CRM</h2>
-      <input type="text" id="loginUser" placeholder="Логин" autocomplete="username" />
-      <input type="password" id="loginPass" placeholder="Пароль" autocomplete="current-password" />
-      <button type="button" id="loginBtn">Войти</button>
-      <p class="login-err" id="loginErr">Неверный логин или пароль.</p>
+      <h2>Р’С…РѕРґ РІ CRM</h2>
+      <input type="text" id="loginUser" placeholder="Р›РѕРіРёРЅ" autocomplete="username" />
+      <input type="password" id="loginPass" placeholder="РџР°СЂРѕР»СЊ" autocomplete="current-password" />
+      <button type="button" id="loginBtn">Р’РѕР№С‚Рё</button>
+      <p class="login-err" id="loginErr">РќРµРІРµСЂРЅС‹Р№ Р»РѕРіРёРЅ РёР»Рё РїР°СЂРѕР»СЊ.</p>
     </div>
     <div id="crmView" style="display:none">
       <div class="topbar">
-        <a class="back" href="/index.html">На сайт</a>
-        <button type="button" class="btn-logout" id="logoutBtn">Выйти</button>
+        <a class="back" href="/index.html">РќР° СЃР°Р№С‚</a>
+        <button type="button" class="btn-logout" id="logoutBtn">Р’С‹Р№С‚Рё</button>
       </div>
-      <h1>CRM заявки</h1>
-      <p class="sub">Данные в <code>db.json</code> · WhatsApp менеджера: 7 778 238 8238</p>
+      <h1>CRM Р·Р°СЏРІРєРё</h1>
+      <p class="sub">Р”Р°РЅРЅС‹Рµ РІ <code>db.json</code> В· WhatsApp РјРµРЅРµРґР¶РµСЂР°: 7 778 238 8238</p>
       <div class="filters">
-        <select id="filterStatus" aria-label="Статус">
-          <option value="all">Все статусы</option>
-          <option value="new">Новая</option>
-          <option value="in-progress">В работе</option>
-          <option value="done">Завершена</option>
+        <select id="filterStatus" aria-label="РЎС‚Р°С‚СѓСЃ">
+          <option value="all">Р’СЃРµ СЃС‚Р°С‚СѓСЃС‹</option>
+          <option value="new">РќРѕРІР°СЏ</option>
+          <option value="in-progress">Р’ СЂР°Р±РѕС‚Рµ</option>
+          <option value="done">Р—Р°РІРµСЂС€РµРЅР°</option>
         </select>
-        <input type="search" id="filterPhone" placeholder="Поиск по телефону" />
+        <input type="search" id="filterPhone" placeholder="РџРѕРёСЃРє РїРѕ С‚РµР»РµС„РѕРЅСѓ" />
       </div>
       <div id="leads"></div>
     </div>
