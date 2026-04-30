@@ -8,9 +8,12 @@
     "start": "node server.js",
     "scrape": "node scraper.js",
     "serve": "node server.js",
-    "images:localize": "node download-images.js"
+    "images:localize": "node download-images.js",
+    "hero:webp": "node scripts/gen-hero-webp.js",
+    "build:css": "tailwindcss -i ./tailwind-source.css -o ./css/styles.css --minify"
   },
   "dependencies": {
+    "@tailwindcss/cli": "^4.2.2",
     "@tailwindcss/vite": "^4.2.2",
     "axios": "^1.13.1",
     "cors": "^2.8.6",

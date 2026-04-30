@@ -1,4 +1,6 @@
 node_modules
-images/
+images/*
+!images/hero-600.webp
+!images/hero-1200.webp
 .env
 db.json

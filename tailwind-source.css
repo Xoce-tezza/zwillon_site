@@ -1,0 +1,5 @@
+@import "tailwindcss";
+
+/* Только шаблоны и JS со строками классов — без node_modules/.git через сканер CLI */
+@source "./**/*.html";
+@source "./**/*.js";

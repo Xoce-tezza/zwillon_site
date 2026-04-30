@@ -196,6 +196,11 @@ document.addEventListener("DOMContentLoaded", () => {
     let src = getProductImage(product);
     if (!src) src = "/images/placeholder.png";
     const sep = src.includes("?") ? "&" : "?";
+    // До ответа API в разметке — локальный WebP + srcset (LCP). После — один src с CDN, без конфликтующего srcset.
+    imgEl.removeAttribute("srcset");
+    imgEl.removeAttribute("sizes");
+    imgEl.removeAttribute("width");
+    imgEl.removeAttribute("height");
     imgEl.src = src + sep + "v=" + Date.now();
   }
 

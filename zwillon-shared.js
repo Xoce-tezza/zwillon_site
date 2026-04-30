@@ -187,15 +187,6 @@
     return s;
   }
 
-  /** Как в ТЗ: пусто -> placeholder.png, // -> https: */
-  function fixImage(url) {
-    const u = String(url || "").trim();
-    if (!u) return PLACEHOLDER_IMAGE_SRC;
-    if (u.startsWith("//")) return "https:" + u;
-    if (u.startsWith("http")) return u;
-    return u;
-  }
-
   /** Публичный URL картинки для UI: Cloudinary или внешний URL, локальный только placeholder. */
   function siteAssetImageSrc(url) {
     return cloudinaryImageSrc(url);
@@ -394,17 +385,6 @@
     return String(_productSlugCache.slugToId[key] || "");
   }
 
-  function stripHtmlLite(s) {
-    return String(s || "")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-  }
-
-  function catalogDisplayCategory(name) {
-    return getCategory(name);
-  }
-
   /**
    * Бакет для текстов: посуда / техника / чайники / аксессуары / общий.
    * Учитывает ключ category (posuda, tehnika…), русские ярлыки и название.
@@ -450,29 +430,6 @@
       return "posuda";
     }
     return "other";
-  }
-
-  function hashPick(str, modulo) {
-    let h = 2166136261;
-    const s = String(str || "");
-    for (let i = 0; i < s.length; i++) {
-      h ^= s.charCodeAt(i);
-      h = Math.imul(h, 16777619);
-    }
-    return Math.abs(h) % Math.max(1, modulo);
-  }
-
-  function hintsFromProductName(nameRaw) {
-    const t = String(nameRaw || "").toLowerCase();
-    return {
-      stainless: /нерж|inox|сталь/i.test(t),
-      ceramic: /керамик|фарфор|фаянс|камен/i.test(t),
-      glass: /стекл|borosilicate|жаропрочн/i.test(t),
-      cast: /чугун|cast/i.test(t),
-      nonstick: /антипригар|non-?stick/i.test(t),
-      large: /больш|xl|професс|pro/i.test(t),
-      set: /набор|комплект|set/i.test(t),
-    };
   }
 
   function specLinesFromProduct(product) {
@@ -773,107 +730,10 @@
     });
   }
 
-  function bindLeadModal(opts) {
-    const overlay = document.getElementById(opts.overlayId || "leadModalOverlay");
-    const form = document.getElementById(opts.formId || "leadModalForm");
-    const msg = document.getElementById(opts.msgId || "leadModalMsg");
-    const closeBtn = document.getElementById(opts.closeId || "leadModalClose");
-    const contextInput = document.getElementById(opts.contextInputId || "leadModalProduct");
-
-    if (!overlay || !form) return { open: () => {}, close: () => {} };
-
-    const phoneInput =
-      form.querySelector('input[name="phone"]') || form.querySelector('input[type="tel"]');
-    if (phoneInput) {
-      const syncPhone = () => {
-        phoneInput.value = normalizePhone(phoneInput.value || "");
-      };
-      phoneInput.addEventListener("input", syncPhone);
-      phoneInput.addEventListener("paste", () => setTimeout(syncPhone, 0));
-      syncPhone();
-    }
-
-    function open(ctx) {
-      if (contextInput && ctx != null) contextInput.value = String(ctx);
-      if (phoneInput) phoneInput.value = normalizePhone(phoneInput.value || "");
-      overlay.classList.remove("hidden");
-      overlay.setAttribute("aria-hidden", "false");
-      document.body.style.overflow = "hidden";
-      msg?.classList.add("hidden");
-    }
-
-    function close() {
-      overlay.classList.add("hidden");
-      overlay.setAttribute("aria-hidden", "true");
-      document.body.style.overflow = "";
-    }
-
-    closeBtn?.addEventListener("click", close);
-    overlay.addEventListener("click", (e) => {
-      if (e.target === overlay) close();
-    });
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") close();
-    });
-
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-      msg?.classList.add("hidden");
-
-      const fd = new FormData(form);
-      const name = String(fd.get("name") || "").trim();
-      const phone = normalizePhone(String(fd.get("phone") || "").trim());
-      const company = String(fd.get("company") || "").trim();
-      const comment = String(fd.get("comment") || "").trim();
-      const context = String(fd.get("context") || "").trim();
-
-      if (!name) {
-        msg?.classList.remove("hidden");
-        if (msg) msg.textContent = "Укажите имя.";
-        return;
-      }
-      if (!phoneOk(phone)) {
-        msg?.classList.remove("hidden");
-        if (msg) msg.textContent = "Укажите корректный телефон.";
-        return;
-      }
-
-      let leads = [];
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        leads = raw ? JSON.parse(raw) : [];
-        if (!Array.isArray(leads)) leads = [];
-      } catch {
-        leads = [];
-      }
-
-      leads.push({
-        id: String(Date.now()) + "_" + Math.random().toString(36).slice(2, 7),
-        name,
-        phone,
-        company,
-        message: comment || context,
-        status: "new",
-        createdAt: new Date().toISOString(),
-      });
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
-
-      if (msg) {
-        msg.classList.remove("hidden");
-        msg.textContent = "Заявка принята. Ответим с прайсом и условиями.";
-      }
-      form.reset();
-      setTimeout(close, 900);
-    });
-
-    return { open, close };
-  }
-
   window.ZWILLON = {
     STORAGE_KEY,
     CATEGORY_LABELS,
     normalizeImageUrl,
-    fixImage,
     cloudinaryImageSrc,
     siteAssetImageSrc,
     loadData,
@@ -883,7 +743,6 @@
     escapeHtml,
     cleanDescription,
     cleanCatalogDescription,
-    catalogDisplayCategory,
     normalizeProductsFromJson,
     slugifyForSeo,
     buildProductSlugMaps,
@@ -900,7 +759,6 @@
     buildProductDescriptionHtml,
     categoryLabel,
     bindMobileMenu,
-    bindLeadModal,
     normalizePhone,
     phoneOk,
     getWhatsAppLinkGeneral,

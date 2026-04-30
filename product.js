@@ -115,6 +115,7 @@ function ensureSwipe() {
 
 function renderProduct(p) {
   const container = document.querySelector(".product");
+  const h1 = document.getElementById("productPageH1");
 
   if (!container) {
     document.body.insertAdjacentHTML("beforeend", '<p style="color:red;padding:24px">NO .product CONTAINER</p>');
@@ -124,6 +125,7 @@ function renderProduct(p) {
   const images = getGalleryImages(p);
   currentIndex = 0;
   const name = String(p.name || p.name_ru || "");
+  if (h1) h1.textContent = name || "Карточка товара ZWILLON";
   const Z = window.ZWILLON;
   const waProductHref =
     Z && typeof Z.getWhatsAppLinkProduct === "function"
