@@ -75,13 +75,11 @@
     );
   }
 
-  initGa4Once();
-  if (typeof document !== "undefined") {
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", attachGa4ClickDelegation);
-    } else {
+  if (typeof window !== "undefined") {
+    window.addEventListener("load", () => {
+      initGa4Once();
       attachGa4ClickDelegation();
-    }
+    });
   }
 
   if (window.ZWILLON) {
@@ -169,13 +167,8 @@
   }
 
   function rewriteImgTagsToCloudinary(root) {
-    const docEl = root && root.querySelectorAll ? root : document;
-    docEl.querySelectorAll("img[src]").forEach((img) => {
-      const src = img.getAttribute("src");
-      if (!src) return;
-      const next = cloudinaryImageSrc(src);
-      if (next !== src) img.setAttribute("src", next);
-    });
+    // Cloudinary-замена отключена в production-режиме.
+    void root;
   }
 
   function normalizeImageUrl(u) {
@@ -187,9 +180,12 @@
     return s;
   }
 
-  /** Публичный URL картинки для UI: Cloudinary или внешний URL, локальный только placeholder. */
+  /** Публичный URL картинки для UI без Cloudinary-перезаписи. */
   function siteAssetImageSrc(url) {
-    return cloudinaryImageSrc(url);
+    const u = String(url || "").trim();
+    if (!u) return PLACEHOLDER_IMAGE_SRC;
+    if (u.startsWith("//")) return "https:" + u;
+    return u;
   }
 
   /** Критичная загрузка data.local.json без кэша. */

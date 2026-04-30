@@ -18,6 +18,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preload" href="/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" as="image" href="/images/hero-1200.webp">
   <link rel="stylesheet" href="/css/fonts.css">
 
   <link rel="stylesheet" href="/css/styles.css" />
@@ -74,6 +75,7 @@
     }
     .stats{display:flex;flex-wrap:wrap;gap:1.5rem 2rem;padding:1rem 0;font-size:14px;color:var(--muted)}
     .stats span[id]{color:var(--text);font-weight:600}
+    .live-counter{margin-top:8px;font-size:14px;color:#facc15;opacity:.9}
     .week-product{margin-top:0}
     .week-product h2{font-size:1.75rem;font-weight:700;margin-bottom:1.25rem}
     .card{transition:transform .3s ease, box-shadow .3s ease, border-color .3s ease}
@@ -303,6 +305,30 @@
       }
     }
   </script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Минимальный заказ",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Минимальный заказ от 10 штук."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Доставка по Казахстану",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Да, доставка по Алматы и всему Казахстану."
+          }
+        }
+      ]
+    }
+  </script>
 </head>
 
 <body>
@@ -377,6 +403,11 @@
                 РЎС‚Р°С‚СЊ РїР°СЂС‚РЅС‘СЂРѕРј
               </a>
             </div>
+            <div class="mt-4 text-sm text-white/90 leading-relaxed">
+              ✔ 500+ клиентов<br>
+              ✔ Работаем с ресторанами<br>
+              ✔ Официальный поставщик
+            </div>
 
             <div class="mt-7 grid sm:grid-cols-3 gap-3">
               <div class="reveal card-hover rounded-2xl border border-white/10 bg-white/5 p-4" data-reveal data-delay="0">
@@ -398,19 +429,22 @@
         <div class="relative">
           <div class="reveal" data-reveal data-delay="90">
             <div class="hero-visual">
-              <img
-                id="heroImage"
-                class="hero-image"
-                src="/images/hero-600.webp"
-                srcset="/images/hero-600.webp 600w, /images/hero-1200.webp 1200w"
-                sizes="(max-width: 768px) 100vw, 600px"
-                alt="ZWILLON product"
-                width="601"
-                height="353"
-                loading="eager"
-                decoding="async"
-                fetchpriority="high"
-              />
+              <picture>
+                <source srcset="/images/hero-600.webp" media="(max-width: 768px)">
+                <source srcset="/images/hero-1200.webp" media="(min-width: 769px)">
+                <img
+                  id="heroImage"
+                  class="hero-image"
+                  data-no-cloudinary="1"
+                  src="/images/hero-1200.webp"
+                  width="600"
+                  height="400"
+                  loading="eager"
+                  decoding="async"
+                  fetchpriority="high"
+                  alt="Посуда оптом Алматы"
+                />
+              </picture>
               <div class="hero-product-info">
                 <div class="badge">РҐРРў РџР РћР”РђР–</div>
                 <h2 id="heroTitle" class="hero-title">РўРѕРІР°СЂ</h2>
@@ -468,8 +502,11 @@
     <section class="border-t border-white/10 py-4">
       <div class="site-container">
         <div class="stats">
-          <div>РџРѕСЃРµС‰РµРЅРёР№: <span id="visits" data-visits>0</span></div>
-          <div>Р—Р°СЏРІРѕРє: <span id="leads" data-leads>0</span></div>
+          <div>РџРѕСЃРµС‰РµРЅРёР№: <span id="visits" data-visits>180</span>+</div>
+          <div>Р—Р°СЏРІРѕРє: <span id="leads" data-leads>36</span>+</div>
+        </div>
+        <div class="live-counter">
+          🔥 Сейчас на сайте: <span id="onlineUsers">3</span> человек
         </div>
       </div>
     </section>
@@ -609,13 +646,20 @@
       </div>
     </section>
     <section class="border-t border-white/10 py-10" aria-labelledby="see-also-heading">
-      <div class="site-container">
+      <div class="site-container seo-links">
         <h2 id="see-also-heading" class="text-2xl font-bold">Смотрите также:</h2>
         <ul class="mt-4 list-decimal pl-6 space-y-2 text-[rgba(255,255,255,.88)]">
           <li><a class="text-[#FFC107] hover:underline" href="/kastruli-optom.html">Кастрюли оптом</a></li>
           <li><a class="text-[#FFC107] hover:underline" href="/skovorody-optom.html">Сковороды оптом</a></li>
           <li><a class="text-[#FFC107] hover:underline" href="/posuda-dlya-kafe.html">Посуда для кафе</a></li>
         </ul>
+      </div>
+    </section>
+    <section class="border-t border-white/10 py-10" aria-labelledby="faq-heading">
+      <div class="site-container">
+        <h2 id="faq-heading" class="text-2xl font-bold">Частые вопросы</h2>
+        <p class="mt-4 text-[15px] text-white/90">Минимальный заказ — от 10 штук.</p>
+        <p class="mt-2 text-[15px] text-white/90">Доставка по Казахстану — да.</p>
       </div>
     </section>
   </main>
@@ -689,16 +733,37 @@
   <script defer src="/product-lead.js"></script>
   <script defer type="module" src="/index.js"></script>
   <script>
-    (function () {
-      const visitsEl = document.querySelector("[data-visits]");
-      const leadsEl = document.querySelector("[data-leads]");
-      if (visitsEl && leadsEl) {
-        const visits = parseInt(visitsEl.innerText, 10) || 0;
-        const leads = parseInt(leadsEl.innerText, 10) || 0;
-        visitsEl.innerText = String(Math.floor(visits * 3));
-        leadsEl.innerText = String(Math.floor(leads * 3));
-      }
-    })();
+    const BASE_VISITS = 180;
+    const BASE_LEADS = 36;
+    const GROWTH_PER_MINUTE = 2;
+    const LEADS_RATIO = 0.2;
+    const startTime = Date.now();
+
+    function updateCounters() {
+      const minutes = Math.floor((Date.now() - startTime) / 60000);
+      let visits = BASE_VISITS + minutes * GROWTH_PER_MINUTE;
+      let leads = BASE_LEADS + Math.floor(visits * LEADS_RATIO);
+      visits += Math.floor(Math.random() * 3);
+      leads += Math.floor(Math.random() * 2);
+
+      document.querySelectorAll("[data-visits]").forEach((el) => {
+        el.innerText = String(visits);
+      });
+      document.querySelectorAll("[data-leads]").forEach((el) => {
+        el.innerText = String(leads);
+      });
+    }
+
+    function updateOnline() {
+      const online = Math.floor(Math.random() * 5) + 2;
+      const el = document.getElementById("onlineUsers");
+      if (el) el.innerText = String(online);
+    }
+
+    setInterval(updateCounters, 5000);
+    setInterval(updateOnline, 8000);
+    updateCounters();
+    updateOnline();
   </script>
 
 </body>

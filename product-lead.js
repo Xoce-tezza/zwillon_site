@@ -44,20 +44,6 @@
     document.head.appendChild(s);
   }
 
-  function bumpLocalLeadStats() {
-    try {
-      var STORAGE_KEY = "zwillon_stats";
-      var raw = localStorage.getItem(STORAGE_KEY);
-      var data = raw ? JSON.parse(raw) : { visits: 0, leads: 0 };
-      if (!data || typeof data !== "object") data = { visits: 0, leads: 0 };
-      data.leads = (Number(data.leads) || 0) + 1;
-      data.visits = Number(data.visits) || 0;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      var l = document.getElementById("leads");
-      if (l) l.textContent = String(data.leads);
-    } catch (_) {}
-  }
-
   function productNameFromPage() {
     var p = window.currentProduct;
     return String((p && (p.name_ru || p.name)) || "").trim();
@@ -185,7 +171,6 @@
       }
       if (!res.ok) throw new Error("bad");
       if (body.success === false) throw new Error("rej");
-      bumpLocalLeadStats();
       if (nameEl) nameEl.value = "";
       if (phoneEl) phoneEl.value = normalizePhone("");
       if (cityEl) cityEl.value = "";

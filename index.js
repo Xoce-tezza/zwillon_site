@@ -1,15 +1,3 @@
-import { incrementVisit, getStats } from "./stats.js";
-
-incrementVisit();
-
-function updateStatsDisplay() {
-  const stats = getStats();
-  const v = document.getElementById("visits");
-  const l = document.getElementById("leads");
-  if (v) v.textContent = String(stats.visits);
-  if (l) l.textContent = String(stats.leads);
-}
-
 window.openProduct = function openProduct(id) {
   const raw = String(id || "").trim();
   if (!raw) return;
@@ -32,8 +20,6 @@ document.addEventListener("DOMContentLoaded", () => {
     console.error("[index] zwillon-shared.js не подключён");
     return;
   }
-
-  updateStatsDisplay();
 
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => Array.from(el.querySelectorAll(s));
@@ -186,22 +172,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const product = heroProducts[currentHero];
     const titleEl = document.querySelector(".hero-title");
     const subEl = document.querySelector(".hero-subtitle");
-    const imgEl = document.querySelector(".hero-image");
-    if (!product || !titleEl || !subEl || !imgEl) return;
+    if (!product || !titleEl || !subEl) return;
 
     const name = String(product.name_ru || product.name || "").trim() || "Товар";
     titleEl.textContent = name;
     subEl.textContent = "Минимальный заказ от 10 шт";
 
-    let src = getProductImage(product);
-    if (!src) src = "/images/placeholder.png";
-    const sep = src.includes("?") ? "&" : "?";
-    // До ответа API в разметке — локальный WebP + srcset (LCP). После — один src с CDN, без конфликтующего srcset.
-    imgEl.removeAttribute("srcset");
-    imgEl.removeAttribute("sizes");
-    imgEl.removeAttribute("width");
-    imgEl.removeAttribute("height");
-    imgEl.src = src + sep + "v=" + Date.now();
   }
 
   function initHeroSlider(normalized) {
@@ -217,19 +193,7 @@ document.addEventListener("DOMContentLoaded", () => {
     currentHero = 0;
     updateHero();
 
-    if (heroProducts.length < 2) return;
-
-    heroSliderTimer = setInterval(() => {
-      currentHero = (currentHero + 1) % heroProducts.length;
-      const el = document.querySelector(".hero-image");
-      if (!el) return;
-      el.style.opacity = "0";
-      setTimeout(() => {
-        updateHero();
-        const after = document.querySelector(".hero-image");
-        if (after) after.style.opacity = "1";
-      }, 300);
-    }, 4000);
+    // Статичное hero-изображение для стабильного LCP. Меняем только текст первого товара.
   }
 
   function renderHomeProductCard(p) {
