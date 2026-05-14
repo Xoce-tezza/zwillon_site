@@ -53,11 +53,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function getMainImage(product) {
     const list = Array.isArray(product.images) ? product.images : [];
-    for (const u of [list[1], list[0]]) {
-      const src = Z.siteAssetImageSrc(u || "");
-      if (src && src !== "/images/placeholder.png") return src;
+    const isPh = Z.isPlaceholderImageSrc;
+    const ph = Z.PLACEHOLDER_IMAGE_SRC;
+    const tries = [list[1], list[0]].filter(Boolean);
+    for (let i = 2; i < list.length; i++) tries.push(list[i]);
+    for (const u of tries) {
+      const src = Z.resolveProductImageUrlFromString
+        ? Z.resolveProductImageUrlFromString(u || "")
+        : Z.siteAssetImageSrc(u || "");
+      if (src && !isPh(src)) return src;
     }
-    return "/images/placeholder.png";
+    if (product.image) {
+      const src = Z.resolveProductImageUrlFromString
+        ? Z.resolveProductImageUrlFromString(product.image)
+        : Z.siteAssetImageSrc(product.image);
+      if (src && !isPh(src)) return src;
+    }
+    return ph;
   }
 
   function productCardMarkup(p) {
@@ -70,7 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <article class="card group card-apple flex flex-col h-full rounded-2xl border border-white/10 bg-[#111] overflow-hidden card-hover" role="listitem">
         <div class="block flex flex-col flex-1 min-h-0 cursor-pointer card-open" data-product-id="${Z.escapeHtml(id)}" tabindex="0">
           <div class="relative min-h-[240px] bg-white flex items-center justify-center p-5">
-            <img src="${Z.escapeHtml(imageSrc)}" onerror="this.src='/images/placeholder.png'" referrerpolicy="no-referrer" alt="${Z.escapeHtml(name || "Товар")}" class="w-full h-full max-h-[280px] object-contain image-zoom transition-transform duration-500 ease-out" loading="lazy" />
+            <img src="${Z.escapeHtml(imageSrc)}" onerror="this.onerror=null;this.src='${Z.escapeHtml(Z.PLACEHOLDER_IMAGE_SRC)}'" referrerpolicy="no-referrer" alt="${Z.escapeHtml(name || "Товар")}" class="w-full h-full max-h-[280px] object-contain image-zoom transition-transform duration-500 ease-out" loading="lazy" />
           </div>
           <div class="px-5 pt-4 pb-2 flex flex-col flex-1">
             <p class="text-[11px] tracking-[.2em] uppercase text-[#888] font-medium">${Z.escapeHtml(cat)}</p>

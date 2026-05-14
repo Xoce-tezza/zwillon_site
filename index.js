@@ -148,20 +148,26 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 340);
   }
 
-  /** Как в карточке товара: пропускаем кадры с `_1` (часто обложка), иначе первый подходящий. */
-  function getProductImage(product) {
-    if (!product || !Array.isArray(product.images) || product.images.length === 0) {
-      return "";
+  /** Сырой путь к кадру (для главной — без `_1`, если есть другие). */
+  function pickHomeProductImageRaw(product) {
+    if (!product) return "";
+    if (Array.isArray(product.images) && product.images.length > 0) {
+      const filtered = product.images.filter((img) => !String(img || "").includes("_1"));
+      const pick = filtered[0] || product.images[0];
+      return String(pick || "").trim();
     }
-    const filtered = product.images.filter((img) => !String(img || "").includes("_1"));
-    const pick = filtered[0] || product.images[0];
-    return Z.siteAssetImageSrc(String(pick || ""));
+    return String(product.image || "").trim();
   }
 
   function getCardImageSrc(product) {
-    const src = getProductImage(product);
-    if (src && src !== "/images/placeholder.png") return src;
-    return "/images/placeholder.png";
+    const raw = pickHomeProductImageRaw(product);
+    if (Z.resolveProductImageUrlFromString) {
+      return Z.resolveProductImageUrlFromString(raw);
+    }
+    const src = raw ? Z.siteAssetImageSrc(raw) : Z.PLACEHOLDER_IMAGE_SRC;
+    const ph = Z.PLACEHOLDER_IMAGE_SRC;
+    if (src && !Z.isPlaceholderImageSrc(src)) return src;
+    return ph;
   }
 
   let heroProducts = [];
@@ -208,7 +214,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <article class="card reveal group rounded-2xl border border-white/10 bg-[#111] overflow-hidden flex flex-col h-full" data-reveal>
         <a href="${Z.escapeHtml(productHref)}" class="block flex flex-col h-full">
           <div class="relative bg-white flex items-center justify-center p-0 overflow-hidden rounded-t-2xl min-h-[220px]">
-            <img src="${Z.escapeHtml(imgSrc)}" onerror="this.src='/images/placeholder.png'" referrerpolicy="no-referrer" alt="${Z.escapeHtml(name)}" class="image-zoom transition-transform duration-500 w-full h-[220px] object-contain" loading="lazy" />
+            <img src="${Z.escapeHtml(imgSrc)}" onerror="this.onerror=null;this.src='${Z.escapeHtml(Z.PLACEHOLDER_IMAGE_SRC)}'" referrerpolicy="no-referrer" alt="${Z.escapeHtml(name)}" class="image-zoom transition-transform duration-500 w-full h-[220px] object-contain" loading="lazy" />
           </div>
           <div class="p-5 flex flex-col flex-1">
             <h3 class="text-[16px] font-semibold leading-snug">${Z.escapeHtml(name)}</h3>

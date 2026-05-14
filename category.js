@@ -15,7 +15,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function productCardMarkup(p) {
-    const imageSrc = Z.siteAssetImageSrc(p.image || (Array.isArray(p.images) ? p.images[0] : "") || "");
+    const imageSrc =
+      typeof Z.resolveProductImageUrl === "function"
+        ? Z.resolveProductImageUrl(p)
+        : Z.siteAssetImageSrc(p.image || (Array.isArray(p.images) ? p.images[0] : "") || "");
     const cat = Z.categoryLabel(p.category);
     const name = String(p.name_ru || "").trim();
     const oneLine = name.length > 72 ? name.slice(0, 70) + "…" : name;
@@ -28,7 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
             : "/product.html?id=" + encodeURIComponent(p.id)
         )}" class="block flex flex-col flex-1 min-h-0">
           <div class="relative min-h-[280px] bg-white flex items-center justify-center p-6">
-            <img src="${Z.escapeHtml(imageSrc)}" onerror="this.src='/images/placeholder.png'" referrerpolicy="no-referrer" alt="${Z.escapeHtml(name)}" class="w-full h-full max-h-[320px] object-contain image-zoom transition-transform duration-500 ease-out" loading="lazy" />
+            <img src="${Z.escapeHtml(imageSrc)}" onerror="this.onerror=null;this.src='${Z.escapeHtml(Z.PLACEHOLDER_IMAGE_SRC)}'" referrerpolicy="no-referrer" alt="${Z.escapeHtml(name)}" class="w-full h-full max-h-[320px] object-contain image-zoom transition-transform duration-500 ease-out" loading="lazy" />
           </div>
           <div class="px-5 pt-4 pb-3 flex flex-col flex-1">
             <p class="text-[11px] tracking-[.2em] uppercase text-[#888] font-medium">${Z.escapeHtml(cat)}</p>

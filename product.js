@@ -24,14 +24,20 @@ function cleanDescription(text) {
 
 function getGalleryImages(product) {
   const Z = window.ZWILLON;
-  const toSrc = (u) => (Z && Z.siteAssetImageSrc ? Z.siteAssetImageSrc(u || "") : String(u || "").replace(/^\//, ""));
+  const ph = (Z && Z.PLACEHOLDER_IMAGE_SRC) || "images/placeholder.png";
+  const isPh = (s) => (Z && Z.isPlaceholderImageSrc ? Z.isPlaceholderImageSrc(s) : !s || /placeholder\.png/i.test(String(s)));
+  const toSrc = (u) => {
+    if (Z && typeof Z.resolveProductImageUrlFromString === "function")
+      return Z.resolveProductImageUrlFromString(u || "");
+    return Z && Z.siteAssetImageSrc ? Z.siteAssetImageSrc(u || "") : String(u || "").replace(/^\//, "");
+  };
   const all = Array.isArray(product?.images) ? product.images : [];
-  let paths = all.slice(1).map(toSrc).filter((s) => s && s !== "/images/placeholder.png");
+  let paths = all.slice(1).map(toSrc).filter((s) => s && !isPh(s));
   if (!paths.length && all[0]) {
     const s = toSrc(all[0]);
-    if (s && s !== "/images/placeholder.png") paths = [s];
+    if (s && !isPh(s)) paths = [s];
   }
-  return paths.length ? paths : ["/images/placeholder.png"];
+  return paths.length ? paths : [ph];
 }
 
 let currentIndex = 0;
@@ -65,7 +71,8 @@ function updateImage(images) {
       img.src = images[currentIndex];
       img.style.opacity = "1";
       img.onerror = function () {
-        img.src = "/images/placeholder.png";
+        img.onerror = null;
+        img.src = window.ZWILLON && window.ZWILLON.PLACEHOLDER_IMAGE_SRC ? window.ZWILLON.PLACEHOLDER_IMAGE_SRC : "images/placeholder.png";
       };
     }, 150);
   }
@@ -147,7 +154,7 @@ function renderProduct(p) {
     <div class="apple-product">
       <div class="gallery">
         <button class="gal-nav prev" type="button" onclick="prevImage()" ${images.length > 1 ? "" : "hidden"}>‹</button>
-        <img id="mainImage" src="${esc(images[0])}" alt="${esc(name)}" class="main-img" referrerpolicy="no-referrer" onerror="this.src='/images/placeholder.png'"/>
+        <img id="mainImage" src="${esc(images[0])}" alt="${esc(name)}" class="main-img" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='images/placeholder.png'"/>
         <button class="gal-nav next" type="button" onclick="nextImage()" ${images.length > 1 ? "" : "hidden"}>›</button>
 
         <div class="thumbs">
@@ -160,7 +167,7 @@ function renderProduct(p) {
               data-index="${i}"
               onclick="selectImage(${i})"
               referrerpolicy="no-referrer"
-              onerror="this.src='/images/placeholder.png'"
+              onerror="this.onerror=null;this.src='images/placeholder.png'"
             />
           `
             )

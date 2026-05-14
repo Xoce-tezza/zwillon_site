@@ -98,7 +98,9 @@
     accessories: "Аксессуары",
   };
 
-  const PLACEHOLDER_IMAGE_SRC = "/images/placeholder.png";
+  /** Относительный путь: работает при открытии с корня сайта и через file:// */
+  const PLACEHOLDER_IMAGE_SRC = "images/placeholder.png";
+  /** CDN: кадры каталога из JSON (пути /images/… или zwillon.cn) собираются в URL вида …/image/upload/&lt;public_id&gt; */
   const CLOUDINARY_UPLOAD_BASE =
     "https://res.cloudinary.com/dyciy0kdx/image/upload/";
 
@@ -124,27 +126,30 @@
     return true;
   }
 
-  function cloudinaryPublicIdFromRef(ref) {
-    const s = stripUrlQuery(String(ref || "").trim());
-    if (!s) return "";
-    let pathPart = s;
-    if (/^https?:\/\//i.test(s) || s.startsWith("//")) {
-      const abs = s.startsWith("//") ? "https:" + s : s;
+  /**
+   * public_id для Cloudinary: только имя файла из пути, минус расширение.
+   * Нельзя резать по «_» — в базе id вида hash_2, hash_3 (суффикс кадра).
+   */
+  function extractCloudinaryPublicId(rawPath) {
+    if (!rawPath) return "";
+    let pathStr = stripUrlQuery(String(rawPath).trim());
+    if (/^https?:\/\//i.test(pathStr) || pathStr.startsWith("//")) {
       try {
-        pathPart = new URL(abs).pathname;
+        pathStr = new URL(pathStr.startsWith("//") ? "https:" + pathStr : pathStr).pathname;
       } catch {
         return "";
       }
-    } else {
-      pathPart = s.replace(/^\/+/, "");
     }
-    const last = pathPart.split("/").filter(Boolean).pop() || "";
-    return last.replace(/\.[^.]+$/, "").trim();
+    pathStr = pathStr.replace(/^\/+/, "");
+    const segs = pathStr.split("/").filter(Boolean);
+    const filename = segs[segs.length - 1] || "";
+    if (!filename) return "";
+    return filename.replace(/\.[^.]+$/, "").trim();
   }
 
   /**
-   * URL для <img>: локальные /images/… и zwillon.cn → Cloudinary public_id (без расширения).
-   * Внешние абсолютные URL без /images/ оставляем как есть.
+   * URL для <img>: локальные /images/… и zwillon.cn → Cloudinary …/upload/&lt;public_id&gt;.
+   * Внешние абсолютные URL без переписывания — как есть.
    */
   function cloudinaryImageSrc(raw) {
     const u = String(raw || "").trim();
@@ -153,6 +158,8 @@
     const baseOnly = stripUrlQuery(u);
     if (
       baseOnly === PLACEHOLDER_IMAGE_SRC ||
+      baseOnly === "/images/placeholder.png" ||
+      /(^|\/)images\/placeholder\.png$/i.test(baseOnly) ||
       /(^|\/)placeholder\.png$/i.test(baseOnly)
     ) {
       return PLACEHOLDER_IMAGE_SRC;
@@ -161,9 +168,9 @@
 
     if (!needsCloudinaryRewrite(baseOnly)) return u;
 
-    const id = cloudinaryPublicIdFromRef(u);
-    if (!id) return PLACEHOLDER_IMAGE_SRC;
-    return CLOUDINARY_UPLOAD_BASE + id;
+    const publicId = extractCloudinaryPublicId(baseOnly);
+    if (!publicId) return PLACEHOLDER_IMAGE_SRC;
+    return CLOUDINARY_UPLOAD_BASE + publicId;
   }
 
   function rewriteImgTagsToCloudinary(root) {
@@ -180,12 +187,60 @@
     return s;
   }
 
-  /** Публичный URL картинки для UI без Cloudinary-перезаписи. */
+  /** true, если это заглушка (любая известная форма пути). */
+  function isPlaceholderImageSrc(s) {
+    const u = stripUrlQuery(String(s || "").trim());
+    if (!u) return true;
+    return /(^|\/)placeholder\.png$/i.test(u);
+  }
+
+  /**
+   * Публичный URL для &lt;img&gt;: zwillon.cn и локальные /images/… из базы → Cloudinary (файлов в репозитории обычно нет).
+   * Уже готовые абсолютные URL и data: остаются как есть где не требуется замена.
+   */
   function siteAssetImageSrc(url) {
     const u = String(url || "").trim();
     if (!u) return PLACEHOLDER_IMAGE_SRC;
-    if (u.startsWith("//")) return "https:" + u;
-    return u;
+    const absolute = u.startsWith("//") ? "https:" + u : u;
+    return cloudinaryImageSrc(absolute);
+  }
+
+  /** Первое непустое поле из объекта товара (как в JSON: image или images[]). */
+  function firstProductImageRaw(item) {
+    if (!item || typeof item !== "object") return "";
+    const direct = String(item.image || "").trim();
+    if (direct) return direct;
+    const arr = Array.isArray(item.images) ? item.images : [];
+    for (let i = 0; i < arr.length; i++) {
+      const s = String(arr[i] || "").trim();
+      if (s) return s;
+    }
+    return "";
+  }
+
+  /** Один URL для &lt;img&gt; из сырой строки (пусто → placeholder). */
+  function resolveProductImageUrlFromString(raw) {
+    const s = String(raw || "").trim();
+    if (!s) return PLACEHOLDER_IMAGE_SRC;
+    return siteAssetImageSrc(s);
+  }
+
+  /** Один URL для &lt;img&gt; из объекта товара (item.image || images[0] → Cloudinary или как есть). */
+  function resolveProductImageUrl(item) {
+    return resolveProductImageUrlFromString(firstProductImageRaw(item));
+  }
+
+  /**
+   * Защита от 404: сначала осмысленный src, при ошибке — placeholder (без повторного onerror).
+   * Вызовите после присвоения img.src.
+   */
+  function bindProductImageError(img) {
+    if (!img || img.nodeType !== 1) return;
+    const ph = PLACEHOLDER_IMAGE_SRC;
+    img.onerror = function () {
+      img.onerror = null;
+      img.src = ph;
+    };
   }
 
   /** Критичная загрузка data.local.json без кэша. */
@@ -729,6 +784,12 @@
   window.ZWILLON = {
     STORAGE_KEY,
     CATEGORY_LABELS,
+    PLACEHOLDER_IMAGE_SRC,
+    isPlaceholderImageSrc,
+    firstProductImageRaw,
+    resolveProductImageUrlFromString,
+    resolveProductImageUrl,
+    bindProductImageError,
     normalizeImageUrl,
     cloudinaryImageSrc,
     siteAssetImageSrc,

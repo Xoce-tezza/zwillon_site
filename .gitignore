@@ -1,6 +1,9 @@
 node_modules
 images/*
+!images/placeholder.png
 !images/hero-600.webp
 !images/hero-1200.webp
+!images/products/
+!images/products/.gitkeep
 .env
 db.json

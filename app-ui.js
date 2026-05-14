@@ -242,10 +242,19 @@
   function renderProductCard(product, index = 0) {
     const categoryLabel = (window.ZWILLON_CATEGORIES || []).find((c) => c.key === product.category)?.label || product.category;
     const Z = window.ZWILLON;
+    const ph = (Z && Z.PLACEHOLDER_IMAGE_SRC) || "images/placeholder.png";
     const imageSrc =
-      Z && typeof Z.siteAssetImageSrc === "function"
-        ? Z.siteAssetImageSrc(product.image || "")
-        : normalizeImageUrl(product.image) || product.image || "";
+      Z && typeof Z.resolveProductImageUrl === "function"
+        ? Z.resolveProductImageUrl(product)
+        : Z && typeof Z.siteAssetImageSrc === "function"
+          ? Z.siteAssetImageSrc(
+              String(
+                product.image ||
+                  (Array.isArray(product.images) ? product.images[0] : "") ||
+                  ""
+              ).trim()
+            )
+          : normalizeImageUrl(product.image) || product.image || ph;
     return `
       <article class="reveal group card-hover rounded-2xl border border-white/10 bg-[#111] overflow-hidden flex flex-col h-full" data-reveal data-delay="${Math.min(index * 40, 220)}">
         <a href="${escapeHtml(
@@ -254,7 +263,7 @@
             : "/product.html?id=" + encodeURIComponent(product.id)
         )}" class="block flex flex-col h-full">
           <div class="relative h-[240px] bg-white flex items-center justify-center p-4">
-            <img src="${escapeHtml(imageSrc)}" onerror="this.src='/images/placeholder.png'" referrerpolicy="no-referrer" alt="${escapeHtml(product.name_ru)}" class="w-full h-full object-contain image-zoom transition-transform duration-500" loading="lazy" />
+            <img src="${escapeHtml(imageSrc)}" onerror="this.onerror=null;this.src='${escapeHtml(ph)}'" referrerpolicy="no-referrer" alt="${escapeHtml(product.name_ru)}" class="w-full h-full object-contain image-zoom transition-transform duration-500" loading="lazy" />
           </div>
           <div class="p-5 flex flex-col flex-1">
             <div class="text-xs tracking-[.18em] text-[#AAAAAA] font-semibold">${escapeHtml(categoryLabel)}</div>
@@ -451,8 +460,23 @@
     const categories = window.ZWILLON_CATEGORIES || [];
     const catLabel = categories.find((c) => c.key === product.category)?.label || product.category;
 
+    const ph = (window.ZWILLON && window.ZWILLON.PLACEHOLDER_IMAGE_SRC) || "images/placeholder.png";
+    const Z = window.ZWILLON;
+    const src =
+      Z && typeof Z.resolveProductImageUrl === "function"
+        ? Z.resolveProductImageUrl(product)
+        : ph;
+
     productH1.textContent = product.name_ru;
-    img.src = product.image;
+    img.src = src || ph;
+    if (Z && typeof Z.bindProductImageError === "function") {
+      Z.bindProductImageError(img);
+    } else {
+      img.onerror = function () {
+        img.onerror = null;
+        img.src = ph;
+      };
+    }
     img.alt = product.name_ru;
     desc.textContent = product.description_ru;
 
